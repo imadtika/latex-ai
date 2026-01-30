@@ -1,0 +1,56 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage[margin=1.5cm]{geometry}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\definecolor{headercolor}{RGB}{0, 83, 156}
+
+\titleformat{\section}{\large\bfseries\color{headercolor}}{}{0em}{}[\titlerule]
+\titlespacing{\section}{0pt}{12pt}{6pt}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+
+\begin{document}
+
+\begin{center}
+    {\Huge\textbf{Pierre Dev}}\\[0.4cm]
+    {\large Développeur Python}\\[0.3cm]
+    06 78 90 12 34 | pierre.dev@email.com | Lyon, France
+\end{center}
+
+\section{Expérience Professionnelle}
+
+\textbf{Développeur Python} \hfill \textit{2020 -- Présent}\\
+\textit{Entreprise DEF, Lyon}
+\begin{itemize}[noitemsep, topsep=3pt]
+    \item Développement d'applications web avec Django et Flask
+    \item Analyse de données avec Pandas et NumPy
+    \item Mise en place de tests unitaires avec Pytest
+\end{itemize}
+
+\textbf{Stagiaire Développement} \hfill \textit{2019 -- 2020}\\
+\textit{Entreprise GHI, Paris}
+\begin{itemize}[noitemsep, topsep=3pt]
+    \item Participation au développement d'un projet de reconnaissance d'images avec TensorFlow
+    \item Apprendre les bonnes pratiques de développement avec Git
+\end{itemize}
+
+\section{Formation}
+
+\textbf{Master Informatique} \hfill \textit{2018 -- 2020}\\
+\textit{Université Lyon 1}
+
+\section{Compétences}
+
+\textbf{Langages:} Python, JavaScript, SQL\\
+\textbf{Frameworks:} Django, Flask, TensorFlow\\
+\textbf{Bases de données:} MySQL, PostgreSQL, MongoDB\\
+\textbf{Systèmes d'exploitation:} Windows, Linux, macOS
+
+\end{document}

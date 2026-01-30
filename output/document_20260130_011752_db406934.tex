@@ -1,0 +1,44 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{\thepage}
+
+\begin{document}
+\begin{titlepage}
+    \centering
+    {\Large\textbf{PROGRAMMING REPORT}}\\[2cm]
+    {\Huge\textbf{Hello World Example}}\\[3cm]
+    \textbf{Prepared by:} Programmer Name\\[0.5cm]
+    {\large Date: \today}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\chapter{Introduction}
+The purpose of this report is to demonstrate a simple programming concept using the printf function to display "hello world" on the screen.
+
+\chapter{Methodology}
+To achieve this, we will use a programming language such as C, which supports the printf function. The code will be as follows: 
+\begin{verbatim}
+#include <stdio.h>
+int main() {
+    printf("hello world");
+    return 0;
+}
+\end{verbatim}
+
+\chapter{Results}
+When the above code is compiled and executed, the output will be "hello world" printed on the screen.
+
+\chapter{Conclusion}
+In conclusion, the printf function is a basic yet essential part of programming in C, allowing users to print output to the screen. This example demonstrates its simplicity and effectiveness.
+
+\end{document}

@@ -1,0 +1,12 @@
+# Protect API Key - IMPORTANT!
+.env
+backend/.env
+
+# Python files to ignore
+__pycache__/
+*.pyc
+venv/
+
+# System files
+.DS_Store
+Thumbs.db

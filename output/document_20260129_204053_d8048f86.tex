@@ -1,0 +1,55 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage[margin=1.5cm]{geometry}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\definecolor{headercolor}{RGB}{0, 83, 156}
+
+\titleformat{\section}{\large\bfseries\color{headercolor}}{}{0em}{}[\titlerule]
+\titlespacing{\section}{0pt}{12pt}{6pt}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+
+\begin{document}
+
+\begin{center}
+    {\Huge\textbf{Pierre Durand}}\\[0.4cm]
+    {\large Développeur Python Expérimenté}\\[0.3cm]
+    06 78 90 12 34 | pierre.durand@email.com | Lyon, France
+\end{center}
+
+\section{Expérience Professionnelle}
+
+\textbf{Développeur Python} \hfill \textit{2020 -- 2023}\\
+\textit{Entreprise XYZ, Lyon}
+\begin{itemize}[noitemsep, topsep=3pt]
+    \item Développement d'applications web avec Django et Flask
+    \item Analyse de données avec Pandas et NumPy
+    \item Mise en place de tests unitaires et d'intégration avec Pytest
+\end{itemize}
+
+\textbf{Développeur Data Scientist} \hfill \textit{2019 -- 2020}\\
+\textit{Entreprise ABC, Paris}
+\begin{itemize}[noitemsep, topsep=3pt]
+    \item Développement de modèles de machine learning avec Scikit-learn
+    \item Utilisation de TensorFlow pour le traitement d'images
+\end{itemize}
+
+\section{Formation}
+
+\textbf{Master Informatique} \hfill \textit{2018 -- 2019}\\
+\textit{Université Lyon 1}
+
+\section{Compétences}
+
+\textbf{Langages:} Python, JavaScript, SQL\\
+\textbf{Frameworks:} Django, Flask, Scikit-learn, TensorFlow\\
+\textbf{Bases de données:} MySQL, PostgreSQL, MongoDB
+
+\end{document}

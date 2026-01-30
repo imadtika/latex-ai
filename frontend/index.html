@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LaTeX AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="LTX.png" type="image/png">
+</head>
+<body>
+    <!-- Animated Background - Smooth Glow -->
+    <div class="bg-animation">
+        <div class="glow-layer glow-1"></div>
+        <div class="glow-layer glow-2"></div>
+        <div class="glow-layer glow-3"></div>
+    </div>
+
+    <div class="app-container">
+        
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <img src="LTX.png" alt="LaTeX AI" class="logo-img">
+                    <span>LaTeX AI</span>
+                </div>
+                <button class="close-sidebar" id="closeSidebar" title="Close sidebar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="sidebar-actions">
+                <button class="action-btn primary" id="newChatBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                    <span>New Chat</span>
+                </button>
+                <button class="action-btn" id="newFolderBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                        <line x1="12" y1="11" x2="12" y2="17"/>
+                        <line x1="9" y1="14" x2="15" y2="14"/>
+                    </svg>
+                    <span>New Folder</span>
+                </button>
+            </div>
+
+            <div class="sidebar-search">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="M21 21l-4.35-4.35"/>
+                </svg>
+                <input type="text" id="searchInput" placeholder="Search chats...">
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <span class="nav-section-title">Templates</span>
+                    <button class="nav-item" data-template="cv">
+                        <span class="nav-icon">01</span>
+                        <span>CV / Resume</span>
+                    </button>
+                    <button class="nav-item" data-template="pfe">
+                        <span class="nav-icon">02</span>
+                        <span>Thesis / PFE</span>
+                    </button>
+                    <button class="nav-item" data-template="letter">
+                        <span class="nav-icon">03</span>
+                        <span>Cover Letter</span>
+                    </button>
+                    <button class="nav-item" data-template="report">
+                        <span class="nav-icon">04</span>
+                        <span>Report</span>
+                    </button>
+                    <button class="nav-item" data-template="presentation">
+                        <span class="nav-icon">05</span>
+                        <span>Presentation</span>
+                    </button>
+                </div>
+
+                <div class="nav-section">
+                    <span class="nav-section-title">Folders <span class="section-count" id="folderCount">0</span></span>
+                    <div class="folders-list" id="foldersList"></div>
+                </div>
+
+                <div class="nav-section">
+                    <span class="nav-section-title">Recent Chats <span class="section-count" id="chatCount">0</span></span>
+                    <div class="chats-list" id="chatsList"></div>
+                </div>
+
+                <div class="nav-section">
+                    <span class="nav-section-title">Starred <span class="section-count" id="starredCount">0</span></span>
+                    <div class="starred-list" id="starredList"></div>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button class="nav-item" id="aboutBtn">
+                    <span class="nav-icon">i</span>
+                    <span>About</span>
+                </button>
+            </div>
+        </aside>
+
+        <button class="open-sidebar" id="openSidebar" title="Open sidebar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+        </button>
+
+        <main class="main-content">
+            
+            <!-- Welcome Screen -->
+            <div class="welcome-screen" id="welcomeScreen">
+                <div class="welcome-content">
+                    <div class="welcome-logo">
+                        <img src="LTX.png" alt="LaTeX AI" class="welcome-logo-img">
+                    </div>
+                    <h1 class="welcome-title">
+                        <span class="typing-text" id="typingText"></span>
+                        <span class="cursor">|</span>
+                    </h1>
+                    
+                    <div class="input-area-welcome">
+                        <div class="input-container">
+                            <textarea id="promptInput" placeholder="Describe your document..." rows="1"></textarea>
+                            <button class="send-btn" id="sendBtn">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                                    <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <p class="input-disclaimer">LaTeX AI can make mistakes. Please double-check responses.</p>
+                    </div>
+                    
+                    <div class="template-pills">
+                        <button class="template-pill" data-template="cv">CV</button>
+                        <button class="template-pill" data-template="pfe">Thesis</button>
+                        <button class="template-pill" data-template="letter">Letter</button>
+                        <button class="template-pill" data-template="report">Report</button>
+                        <button class="template-pill" data-template="presentation">Slides</button>
+                    </div>
+                </div>
+                
+                <!-- Rotating Badge - Bottom Left -->
+                <div class="rotating-badge">
+                    <svg viewBox="0 0 200 200" class="badge-svg">
+                        <defs>
+                            <path id="circlePath" d="M 100, 100 m -70, 0 a 70,70 0 1,1 140,0 a 70,70 0 1,1 -140,0"/>
+                        </defs>
+                        <text class="badge-text">
+                            <textPath href="#circlePath">LATEX AI • CREATE • INSPIRE • REPEAT • 2026 © • DREAM • </textPath>
+                        </text>
+                        <g class="badge-globe" transform="translate(100, 100)">
+                            <circle cx="0" cy="0" r="22" fill="none" stroke="currentColor" stroke-width="1.2"/>
+                            <ellipse cx="0" cy="0" rx="22" ry="9" fill="none" stroke="currentColor" stroke-width="0.8"/>
+                            <ellipse cx="0" cy="0" rx="9" ry="22" fill="none" stroke="currentColor" stroke-width="0.8"/>
+                            <line x1="-22" y1="0" x2="22" y2="0" stroke="currentColor" stroke-width="0.8"/>
+                            <line x1="0" y1="-22" x2="0" y2="22" stroke="currentColor" stroke-width="0.8"/>
+                        </g>
+                    </svg>
+                </div>
+                
+            <footer class="welcome-footer">
+                <p class="footer-credits">
+                    Built by <strong>TIKA Imad</strong> · 3rd Year CS, ML & AI Student · National School of Applied Sciences
+                </p>
+            </footer>
+            </div>
+
+            <!-- Chat Screen -->
+            <div class="chat-screen" id="chatScreen">
+                <div class="chat-header">
+                    <div class="chat-header-left">
+                        <button class="icon-btn" id="backBtn" title="Back">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 12H5M12 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                        <div class="chat-info">
+                            <span class="chat-title" id="chatTitle">New Chat</span>
+                            <button class="edit-title-btn" id="editTitleBtn" title="Rename">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chat-header-right">
+                        <button class="icon-btn" id="starChatBtn" title="Star">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                            </svg>
+                        </button>
+                        <button class="icon-btn" id="moveChatBtn" title="Move to folder">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                            </svg>
+                        </button>
+                        <button class="icon-btn danger" id="deleteChatBtn" title="Delete">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="chat-messages" id="chatMessages"></div>
+                
+                <div class="chat-input-area">
+                    <div class="input-container">
+                        <textarea id="chatPromptInput" placeholder="Ask for modifications..." rows="1"></textarea>
+                        <button class="send-btn" id="chatSendBtn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                                <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="input-disclaimer">LaTeX AI can make mistakes. Please double-check responses.</p>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- About Modal -->
+    <div class="modal-overlay" id="aboutModal">
+        <div class="modal">
+            <button class="modal-close" id="closeAboutModal">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+            </button>
+            <div class="modal-content">
+                <div class="modal-logo">
+                    <img src="LTX.png" alt="LaTeX AI" class="modal-logo-img">
+                </div>
+                <h2 class="modal-title">LaTeX AI</h2>
+                <p class="modal-version">v1.0.0</p>
+                <div class="modal-section">
+                    <h3>About</h3>
+                    <p>LaTeX AI transforms natural language into professional LaTeX documents. Powered by AI, it creates CVs, thesis covers, letters, reports, and presentations instantly.</p>
+                </div>
+                <div class="modal-section">
+                    <h3>Features</h3>
+                    <ul>
+                        <li>Natural language to LaTeX</li>
+                        <li>Multiple templates</li>
+                        <li>Folder organization</li>
+                        <li>Chat history with search</li>
+                        <li>Direct Overleaf export</li>
+                    </ul>
+                </div>
+                <div class="modal-section">
+                    <h3>Tech Stack</h3>
+                    <div class="tech-stack">
+                        <span class="tech-tag">Python</span>
+                        <span class="tech-tag">Flask</span>
+                        <span class="tech-tag">Groq API</span>
+                        <span class="tech-tag">LLaMA 3.3</span>
+                    </div>
+                </div>
+                <div class="modal-divider"></div>
+                <div class="creator-section">
+                    <div class="creator-avatar">IT</div>
+                    <div class="creator-info">
+                        <h4>TIKA Imad</h4>
+                        <p>3rd Year Computer Science</p>
+                        <p>ML & AI Student</p>
+                        <p class="creator-school">National School of Applied Sciences</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal modal-sm">
+            <div class="modal-content">
+                <h3 class="confirm-title" id="confirmTitle">Confirm</h3>
+                <p class="confirm-message" id="confirmMessage">Are you sure?</p>
+                <div class="confirm-actions">
+                    <button class="btn btn-secondary" id="confirmCancel">Cancel</button>
+                    <button class="btn btn-danger" id="confirmOk">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Folder Modal -->
+    <div class="modal-overlay" id="folderModal">
+        <div class="modal modal-sm">
+            <button class="modal-close" id="closeFolderModal">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+            </button>
+            <div class="modal-content">
+                <h3 class="modal-title-sm" id="folderModalTitle">New Folder</h3>
+                <div class="form-group">
+                    <label for="folderNameInput">Folder Name</label>
+                    <input type="text" id="folderNameInput" placeholder="Enter folder name...">
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-secondary" id="folderModalCancel">Cancel</button>
+                    <button class="btn btn-primary" id="folderModalSave">Create</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rename Modal -->
+    <div class="modal-overlay" id="renameModal">
+        <div class="modal modal-sm">
+            <button class="modal-close" id="closeRenameModal">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+            </button>
+            <div class="modal-content">
+                <h3 class="modal-title-sm">Rename Chat</h3>
+                <div class="form-group">
+                    <label for="chatNameInput">Chat Name</label>
+                    <input type="text" id="chatNameInput" placeholder="Enter chat name...">
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-secondary" id="renameModalCancel">Cancel</button>
+                    <button class="btn btn-primary" id="renameModalSave">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Move Modal -->
+    <div class="modal-overlay" id="moveModal">
+        <div class="modal modal-sm">
+            <button class="modal-close" id="closeMoveModal">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+            </button>
+            <div class="modal-content">
+                <h3 class="modal-title-sm">Move to Folder</h3>
+                <div class="folder-select-list" id="folderSelectList"></div>
+                <div class="form-actions">
+                    <button class="btn btn-secondary" id="moveModalCancel">Cancel</button>
+                    <button class="btn btn-primary" id="removeFromFolder">Remove from Folder</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <div class="spinner-ring"></div>
+            <p class="loading-text" id="loadingText">Generating...</p>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{listings}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{\thepage}
+
+\begin{document}
+\begin{titlepage}
+    \centering
+    {\Large\textbf{HELLO WORLD REPORT}}\\[2cm]
+    {\Huge\textbf{Hello World in C}}\\[3cm]
+    \textbf{Prepared by:} Author Name\\[0.5cm]
+    {\large Date: \today}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\chapter{Introduction}
+Hello World! Below is a simple C code snippet that prints "Hello, World!" to the screen:
+\begin{lstlisting}[language=C]
+#include <stdio.h>
+
+int main() {
+    printf("Hello, World!\n");
+    return 0;
+}
+\end{lstlisting}
+
+\end{document}
