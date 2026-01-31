@@ -67,6 +67,58 @@ function init() {
     setupListeners();
     startTyping();
     renderSidebar();
+    // Theme toggle logic
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.onclick = function() {
+            document.body.classList.toggle('light-theme');
+            themeToggle.classList.toggle('active');
+        };
+    }
+    // Voice button (top-right) logic
+    const voiceBtnTop = document.getElementById('voiceBtnTop');
+    if (voiceBtnTop) {
+        let recognition, recognizing = false;
+        voiceBtnTop.onclick = async function() {
+            if (recognizing && recognition) { recognition.stop(); return; }
+            // Permission prompt
+            try {
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    await navigator.mediaDevices.getUserMedia({ audio: true });
+                }
+            } catch (e) {
+                toast('Microphone permission denied.');
+                return;
+            }
+            let SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                toast('Speech recognition not supported in this browser.');
+                return;
+            }
+            recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognizing = true;
+            voiceBtnTop.classList.add('recording');
+            toast('Listening...');
+            recognition.onresult = function(event) {
+                let transcript = Array.from(event.results).map(r => r[0].transcript).join('');
+                // Insert into main input
+                const input = document.getElementById('promptInput');
+                if (input) {
+                    input.value = (input.value + ' ' + transcript).trim();
+                    if (typeof autoResize === 'function') autoResize(input);
+                }
+            };
+            recognition.onerror = function(e) {
+                toast('Voice recognition error: ' + (e.error || 'Unknown'));
+            };
+            recognition.onend = function() {
+                recognizing = false;
+                voiceBtnTop.classList.remove('recording');
+            };
+            recognition.start();
+        };
+    }
 }
 
 function cacheElements() {
@@ -138,10 +190,66 @@ function cacheElements() {
         loadingOverlay: document.getElementById('loadingOverlay'),
         loadingText: document.getElementById('loadingText'),
         typingText: document.getElementById('typingText'),
-        toastContainer: document.getElementById('toastContainer')
+        toastContainer: document.getElementById('toastContainer'),
+
+        // Voice & Upload
+        voiceBtn: document.getElementById('voiceBtn'),
+        voiceBtnChat: document.getElementById('voiceBtnChat'),
+        uploadBtn: document.getElementById('uploadBtn'),
+        uploadBtnChat: document.getElementById('uploadBtnChat'),
+        uploadArea: document.getElementById('uploadArea'),
+        fileInput: document.getElementById('fileInput'),
+        closeUploadModal: document.getElementById('closeUploadModal'),
+        uploadProgress: document.getElementById('uploadProgress'),
+        progressFill: document.getElementById('progressFill'),
+        progressText: document.getElementById('progressText'),
+
+        // Preview Modal
+        previewFrame: document.getElementById('previewFrame'),
+        closePreviewModal: document.getElementById('closePreviewModal'),
+
+        // Logo
+        logo: document.querySelector('.logo')
     };
 }
+// Voice recognition setup
+let recognition = null, recognizing = false;
+function startVoiceInput(targetInput, btn, autoSend = false) {
+    if (recognizing) { recognition.stop(); return; }
+    let SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        toast('Speech recognition not supported in this browser.');
+        return;
+    }
+    recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognizing = true;
+    btn.classList.add('recording');
+    toast("Listening...");
 
+    recognition.onresult = function(event) {
+        let transcript = Array.from(event.results).map(r => r[0].transcript).join('');
+        targetInput.value = transcript.trim();
+        autoResize(targetInput);
+        if (autoSend && transcript.trim()) {
+            setTimeout(() => {
+                if (btn.id === 'voiceBtnChat') {
+                    document.getElementById('chatSendBtn').click();
+                } else if (btn.id === 'voiceBtn') {
+                    document.getElementById('sendBtn').click();
+                }
+            }, 100);
+        }
+    };
+    recognition.onerror = function(e) {
+        toast("Voice recognition error: " + (e.error || 'Unknown'));
+    };
+    recognition.onend = function() {
+        recognizing = false;
+        btn.classList.remove('recording');
+    };
+    recognition.start();
+}
 // ============================================================================
 // Event Listeners Setup
 // ============================================================================
@@ -189,6 +297,51 @@ function setupListeners() {
                 el.promptInput.focus();
             }
         };
+    });
+    // --- [Voice Input events: auto-send for chat] ---
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        if (el.voiceBtn) {
+            el.voiceBtn.onclick = () => startVoiceInput(el.promptInput, el.voiceBtn, false);
+        }
+        if (el.voiceBtnChat) {
+            el.voiceBtnChat.onclick = () => startVoiceInput(el.chatPromptInput, el.voiceBtnChat, true);
+        }
+    } else {
+        el.voiceBtn && (el.voiceBtn.style.display = 'none');
+        el.voiceBtnChat && (el.voiceBtnChat.style.display = 'none');
+    }
+
+    // --- [NEW: Upload events] ---
+    el.uploadBtn && (el.uploadBtn.onclick = () => openModal('uploadModal'));
+    el.uploadBtnChat && (el.uploadBtnChat.onclick = () => openModal('uploadModal'));
+
+    if (el.uploadArea && el.fileInput) {
+        el.uploadArea.onclick = () => el.fileInput.click();
+        el.uploadArea.ondragover = e => {
+            e.preventDefault();
+            el.uploadArea.classList.add('drag-over');
+        };
+        el.uploadArea.ondragleave = e => el.uploadArea.classList.remove('drag-over');
+        el.uploadArea.ondrop = e => {
+            e.preventDefault();
+            el.uploadArea.classList.remove('drag-over');
+            if (e.dataTransfer.files.length) handleUpload(e.dataTransfer.files[0]);
+        };
+        el.fileInput.onchange = e => e.target.files.length && handleUpload(e.target.files[0]);
+    }
+    el.closeUploadModal && (el.closeUploadModal.onclick = () => closeModal('uploadModal'));
+
+    // --- [Preview Modal events] ---
+    el.closePreviewModal && (el.closePreviewModal.onclick = () => closeModal('previewModal'));
+
+    // --- [Logo navigation] ---
+    el.logo && (el.logo.onclick = () => {
+        goHome();
+        state.currentChat = null;
+        el.chatMessages.innerHTML = '';
+        el.promptInput.value = '';
+        el.chatPromptInput.value = '';
+        renderSidebar();
     });
     
     // Chat header actions
@@ -651,6 +804,15 @@ function goHome() {
     el.welcomeScreen.style.display = 'flex';
     state.currentChat = null;
     renderSidebar();
+    // Ensure main input is interactive: blur chat input and focus welcome input
+    if (el.chatPromptInput) el.chatPromptInput.blur();
+    if (el.promptInput) {
+        el.promptInput.removeAttribute('disabled');
+        el.promptInput.removeAttribute('readonly');
+        requestAnimationFrame(function () {
+            el.promptInput.focus();
+        });
+    }
 }
 
 // ============================================================================
@@ -681,7 +843,8 @@ function addAssistantMessage(text, code = null, save = true) {
             <div class="code-block">
                 <div class="code-header">
                     <span class="code-lang">LaTeX</span>
-                    <div class="code-actions">
+                             <div class="code-actions">
+                        <button class="code-btn preview" onclick="previewPDF()">Preview</button>
                         <button class="code-btn" onclick="copyCode()">Copy</button>
                         <button class="code-btn" onclick="downloadTex()">Download .tex</button>
                         <button class="code-btn primary" onclick="openOverleaf()">Open in Overleaf</button>
@@ -998,20 +1161,19 @@ function hideLoading() {
 // ============================================================================
 
 function toast(message) {
+    // Show notification in top-left
+    const container = document.getElementById('notificationContainer');
     const toastEl = document.createElement('div');
     toastEl.className = 'toast';
     toastEl.textContent = message;
-    el.toastContainer.appendChild(toastEl);
-    
+    container.appendChild(toastEl);
     setTimeout(() => {
         toastEl.style.opacity = '0';
-        toastEl.style.transform = 'translateX(20px)';
+        toastEl.style.transform = 'translateY(-20px)';
         setTimeout(() => {
-            if (toastEl.parentNode) {
-                toastEl.remove();
-            }
-        }, 300);
-    }, 3000);
+            if (toastEl.parentNode) toastEl.remove();
+        }, 400);
+    }, 2600);
 }
 
 // ============================================================================
@@ -1033,7 +1195,125 @@ function scrollToBottom() {
         el.chatMessages.scrollTop = el.chatMessages.scrollHeight;
     }
 }
+window.previewPDF = async function previewPDF() {
+        if (!state.currentLatexCode) return toast('No LaTeX document to preview');
+        openModal('previewModal');
+        el.previewFrame.innerHTML = `<p class="preview-loading">Generating preview...</p>`;
+        try {
+                const resp = await fetch(`${API_URL}/preview`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                                latex_code: state.currentLatexCode,
+                                filename: state.currentFilename || "document"
+                        })
+                });
+                if (resp.ok && resp.headers.get("content-type").includes("application/pdf")) {
+                        const blob = await resp.blob();
+                        const url = URL.createObjectURL(blob);
+                        // Split-pane: left = code, right = PDF
+                        el.previewFrame.innerHTML = `
+                                <div class="split-pane">
+                                    <div class="editor-pane">
+                                        <pre style="margin:0;padding:1em;font-family:var(--font-mono);font-size:0.95em;white-space:pre-wrap;background:var(--bg-primary);color:var(--text-primary);height:100%;overflow:auto;">${escapeHtml(state.currentLatexCode)}</pre>
+                                    </div>
+                                    <div class="pdf-pane">
+                                        <iframe src="${url}" style="width:100%;height:100%" frameborder="0"></iframe>
+                                    </div>
+                                </div>
+                        `;
+                } else {
+                        let errMsg = "Preview failed.";
+                        try {
+                                const err = await resp.json();
+                                errMsg = err.error || errMsg;
+                        } catch {}
+                        el.previewFrame.innerHTML = `
+                                <div class="split-pane">
+                                    <div class="editor-pane">
+                                        <pre style="margin:0;padding:1em;font-family:var(--font-mono);font-size:0.95em;white-space:pre-wrap;background:var(--bg-primary);color:var(--text-primary);height:100%;overflow:auto;">${escapeHtml(state.currentLatexCode)}</pre>
+                                    </div>
+                                    <div class="pdf-pane" style="justify-content:center;align-items:center;">
+                                        <div style="color:#f5746c;padding:2em;text-align:center;">
+                                            <strong>PDF Preview Error</strong><br>${escapeHtml(errMsg)}<br><br>
+                                            <a href="https://www.overleaf.com/docs" target="_blank" style="color:var(--accent);text-decoration:underline;">Try compiling on Overleaf</a>
+                                        </div>
+                                    </div>
+                                </div>
+                        `;
+                }
+        } catch (e) {
+                el.previewFrame.innerHTML = `
+                        <div class="split-pane">
+                            <div class="editor-pane">
+                                <pre style="margin:0;padding:1em;font-family:var(--font-mono);font-size:0.95em;white-space:pre-wrap;background:var(--bg-primary);color:var(--text-primary);height:100%;overflow:auto;">${escapeHtml(state.currentLatexCode)}</pre>
+                            </div>
+                            <div class="pdf-pane" style="justify-content:center;align-items:center;">
+                                <div style="color:#f5746c;padding:2em;text-align:center;">
+                                    <strong>Preview Error</strong><br>${escapeHtml(e.message)}<br><br>
+                                    <a href="https://www.overleaf.com/docs" target="_blank" style="color:var(--accent);text-decoration:underline;">Try compiling on Overleaf</a>
+                                </div>
+                            </div>
+                        </div>
+                `;
+        }
+};
 
+async function handleUpload(file) {
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) return toast("File too large (max 10MB)");
+    el.uploadProgress.classList.remove('hidden');
+    el.progressFill.style.width = '0%';
+    el.progressText.textContent = 'Uploading...';
+
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // Progress
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `${API_URL}/upload`, true);
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+                const percent = Math.round(e.loaded / e.total * 100);
+                el.progressFill.style.width = percent + '%';
+                el.progressText.textContent = `Uploading... (${percent}%)`;
+            }
+        };
+
+        xhr.onreadystatechange = async function () {
+            if (xhr.readyState === 4) {
+                el.progressFill.style.width = '100%';
+                try {
+                    const res = JSON.parse(xhr.responseText);
+                    if (xhr.status === 200 && res.success && res.extracted_text) {
+                        el.progressText.textContent = 'Extracted! Inserting text...';
+                        setTimeout(() => {
+                            closeModal('uploadModal');
+                            el.uploadProgress.classList.add('hidden');
+                            el.promptInput.value = (el.promptInput.value + '\n' + res.extracted_text).trim();
+                            autoResize(el.promptInput);
+                            el.promptInput.focus();
+                            toast('Text extracted. You can now edit/add and generate LaTeX.');
+                        }, 800);
+                    } else {
+                        el.progressText.textContent = 'Extraction failed!';
+                        toast('Failed to extract text: ' + (res.error || 'Unknown error'));
+                    }
+                } catch (err) {
+                    el.progressText.textContent = 'Extraction failed!';
+                    toast('Failed to extract text.');
+                }
+                setTimeout(() => el.uploadProgress.classList.add('hidden'), 2000);
+            }
+        };
+
+        xhr.send(formData);
+    } catch (e) {
+        el.uploadProgress.classList.add('hidden');
+        toast("Upload error: " + e.message);
+    }
+}
 // ============================================================================
 // Global Function Exports (for onclick handlers in HTML)
 // ============================================================================

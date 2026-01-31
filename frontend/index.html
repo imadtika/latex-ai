@@ -18,6 +18,10 @@
         <div class="glow-layer glow-3"></div>
     </div>
 
+
+    <!-- Notification Container (top-left) -->
+    <div id="notificationContainer"></div>
+
     <div class="app-container">
         
         <!-- Sidebar -->
@@ -117,12 +121,23 @@
         </button>
 
         <main class="main-content">
-            
+            <!-- Top navigation bar (theme toggle on the right) -->
+            <header class="top-nav" aria-label="Top navigation">
+                <div class="top-nav-spacer"></div>
+                <button id="themeToggle" class="theme-toggle-btn" title="Toggle theme" type="button">
+                    <svg id="themeIcon" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5" fill="#ffe066" stroke="#ffe066"/>
+                        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="#ffe066"/>
+                    </svg>
+                </button>
+            </header>
+
             <!-- Welcome Screen -->
             <div class="welcome-screen" id="welcomeScreen">
                 <div class="welcome-content">
                     <div class="welcome-logo">
                         <img src="LTX.png" alt="LaTeX AI" class="welcome-logo-img">
+                        <p class="welcome-logo-title">LaTeX AI</p>
                     </div>
                     <h1 class="welcome-title">
                         <span class="typing-text" id="typingText"></span>
@@ -130,27 +145,30 @@
                     </h1>
                     
                     <div class="input-area-welcome">
-                        <div class="input-container">
-                            <textarea id="promptInput" placeholder="Describe your document..." rows="1"></textarea>
-                            <button class="icon-btn-input" id="voiceBtn" title="Voice input">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                                    <line x1="12" y1="19" x2="12" y2="23"/>
-                                    <line x1="8" y1="23" x2="16" y2="23"/>
-                                </svg>
-                            </button>
-                            <button class="icon-btn-input" id="uploadBtn" title="Upload document">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-                                </svg>
-                            </button>
-                            <button class="send-btn" id="sendBtn">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                                    <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </button>
-                        </div>
+        <div class="input-container">
+            <textarea id="promptInput" placeholder="Describe your document..." rows="1"></textarea>
+            <!-- NEW mic and upload buttons -->
+            <button class="icon-btn-input" id="voiceBtn" title="Voice input">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="23"/>
+                    <line x1="8" y1="23" x2="16" y2="23"/>
+                </svg>
+            </button>
+            <button class="icon-btn-input" id="uploadBtn" title="Upload document">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                </svg>
+            </button>
+            <button class="send-btn" id="sendBtn">
+                <!-- Arrow icon for Enter/Submit button -->
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                    <polyline points="12 5 19 12 12 19"/>
+                </svg>
+            </button>
+        </div>
                         <p class="input-disclaimer">LaTeX AI can make mistakes. Please double-check responses.</p>
                     </div>
                     
@@ -229,31 +247,29 @@
                 </div>
                 
                 <div class="chat-messages" id="chatMessages"></div>
-                
-                <div class="chat-input-area">
-                    <div class="input-container">
-                        <textarea id="chatPromptInput" placeholder="Ask for modifications..." rows="1"></textarea>
-                        <button class="icon-btn-input" id="voiceBtnChat" title="Voice input">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                                <line x1="12" y1="19" x2="12" y2="23"/>
-                                <line x1="8" y1="23" x2="16" y2="23"/>
-                            </svg>
-                        </button>
-                        <button class="icon-btn-input" id="uploadBtnChat" title="Upload document">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-                            </svg>
-                        </button>
-                        <button class="send-btn" id="chatSendBtn">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                                <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <p class="input-disclaimer">LaTeX AI can make mistakes. Please double-check responses.</p>
-                </div>
+<div class="input-container">
+    <textarea id="chatPromptInput" placeholder="Ask for modifications..." rows="1"></textarea>
+    <button class="icon-btn-input" id="voiceBtnChat" title="Voice input">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+    </button>
+    <button class="icon-btn-input" id="uploadBtnChat" title="Upload document">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+        </svg>
+    </button>
+    <button class="send-btn" id="chatSendBtn">
+        <!-- Arrow icon for Enter/Submit button (chat) -->
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+            <polyline points="12 5 19 12 12 19"/>
+        </svg>
+    </button>
+</div>
             </div>
 
         </main>
@@ -272,7 +288,7 @@
                     <img src="LTX.png" alt="LaTeX AI" class="modal-logo-img">
                 </div>
                 <h2 class="modal-title">LaTeX AI</h2>
-                <p class="modal-version">v2.0.0</p>
+                <p class="modal-version">v1.0.0</p>
                 <div class="modal-section">
                     <h3>About</h3>
                     <p>LaTeX AI transforms natural language into professional LaTeX documents. Powered by AI, it creates CVs, thesis covers, letters, reports, and presentations instantly.</p>
@@ -281,10 +297,9 @@
                     <h3>Features</h3>
                     <ul>
                         <li>Natural language to LaTeX</li>
-                        <li>🎤 Voice input support</li>
-                        <li>📄 Document upload & conversion</li>
-                        <li>👁️ Live PDF preview</li>
+                        <li>Multiple templates</li>
                         <li>Folder organization</li>
+                        <li>Chat history with search</li>
                         <li>Direct Overleaf export</li>
                     </ul>
                 </div>
@@ -388,63 +403,6 @@
         </div>
     </div>
 
-    <!-- Upload Modal -->
-    <div class="modal-overlay" id="uploadModal">
-        <div class="modal modal-sm">
-            <button class="modal-close" id="closeUploadModal">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
-            </button>
-            <div class="modal-content">
-                <h3 class="modal-title-sm">Upload Document</h3>
-                <p class="upload-description">Upload a PDF or Word file to extract text and convert to LaTeX</p>
-                <div class="upload-area" id="uploadArea">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="17 8 12 3 7 8"/>
-                        <line x1="12" y1="3" x2="12" y2="15"/>
-                    </svg>
-                    <p>Drag & drop or click to browse</p>
-                    <span class="upload-formats">PDF, DOC, DOCX, TXT (max 10MB)</span>
-                    <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt" hidden>
-                </div>
-                <div class="upload-progress hidden" id="uploadProgress">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill"></div>
-                    </div>
-                    <p class="progress-text" id="progressText">Processing...</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Preview Modal -->
-    <div class="modal-overlay" id="previewModal">
-        <div class="modal modal-lg">
-            <button class="modal-close" id="closePreviewModal">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
-            </button>
-            <div class="modal-content preview-content">
-                <h3 class="modal-title-sm">Document Preview</h3>
-                <div class="preview-frame" id="previewFrame">
-                    <div class="preview-placeholder">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
-                            <line x1="16" y1="13" x2="8" y2="13"/>
-                            <line x1="16" y1="17" x2="8" y2="17"/>
-                            <polyline points="10 9 9 9 8 9"/>
-                        </svg>
-                        <p>Click "Preview" on any generated document to see it here</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Loading -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-spinner">
@@ -455,6 +413,61 @@
 
     <div class="toast-container" id="toastContainer"></div>
 
+    <!-- Upload Modal -->
+<div class="modal-overlay" id="uploadModal">
+    <div class="modal modal-sm">
+        <button class="modal-close" id="closeUploadModal">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+        </button>
+        <div class="modal-content">
+            <h3 class="modal-title-sm">Upload Document</h3>
+            <p class="upload-description">Upload a PDF or Word file to extract text and convert to LaTeX</p>
+            <div class="upload-area" id="uploadArea">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <p>Drag & drop or click to browse</p>
+                <span class="upload-formats">PDF, DOC, DOCX, TXT (max 10MB)</span>
+                <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt" hidden>
+            </div>
+            <div class="upload-progress hidden" id="uploadProgress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p class="progress-text" id="progressText">Processing...</p>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Preview Modal -->
+<div class="modal-overlay" id="previewModal">
+    <div class="modal modal-lg">
+        <button class="modal-close" id="closePreviewModal">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+        </button>
+        <div class="modal-content preview-content">
+            <h3 class="modal-title-sm">Document Preview</h3>
+            <div class="preview-frame" id="previewFrame">
+                <div class="preview-placeholder">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                    <p>Click "Preview" on any generated document to see it here</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
     <script src="app.js"></script>
 </body>
 </html>
