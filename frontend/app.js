@@ -91,6 +91,7 @@ function init() {
     cacheElements();
     setupListeners();
     setupApiKeyModal();
+    setupPromptGuideModal();
     startTyping();
     renderSidebar();
     
@@ -1795,6 +1796,80 @@ function setupApiKeyModal() {
         };
     }
 }
+
+function setupPromptGuideModal() {
+    const guideBtn = document.getElementById('promptGuideBtn');
+    const closeBtn = document.getElementById('closePromptGuideModal');
+    const modal = document.getElementById('promptGuideModal');
+    
+    // Open modal
+    if (guideBtn) {
+        guideBtn.onclick = () => {
+            modal.classList.add('active');
+        };
+    }
+    
+    // Close modal
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            modal.classList.remove('active');
+        };
+    }
+    
+    // Close on overlay click
+    if (modal) {
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+            }
+        };
+    }
+    
+    // Tab switching
+    const tabs = document.querySelectorAll('#promptGuideModal .guide-tab');
+    const panels = document.querySelectorAll('#promptGuideModal .guide-tab-content');
+    
+    tabs.forEach(tab => {
+        tab.onclick = () => {
+            const targetPanel = tab.dataset.tab;
+            
+            // Update active tab
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            
+            // Show corresponding panel
+            panels.forEach(p => {
+                p.classList.toggle('active', p.dataset.panel === targetPanel);
+            });
+        };
+    });
+}
+
+// Quick prompt function (global)
+window.useQuickPrompt = function(prompt) {
+    // Close the modal
+    document.getElementById('promptGuideModal')?.classList.remove('active');
+    
+    // Navigate to home/chat if not there
+    showWelcome();
+    
+    // Insert prompt into input and focus
+    setTimeout(() => {
+        const input = document.getElementById('userInput');
+        if (input) {
+            input.value = prompt;
+            input.focus();
+            // Select the placeholder text for easy editing
+            const placeholderStart = prompt.indexOf('[');
+            if (placeholderStart !== -1) {
+                const placeholderEnd = prompt.indexOf(']', placeholderStart) + 1;
+                input.setSelectionRange(placeholderStart, placeholderEnd);
+            }
+        }
+    }, 100);
+    
+    toast('Prompt added! Edit the [brackets] with your details.');
+};
 
 // ============================================================================
 // Loading Functions

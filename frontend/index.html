@@ -130,6 +130,16 @@
             </nav>
 
             <div class="sidebar-footer">
+                <button class="nav-item" id="promptGuideBtn" title="Prompt Guide">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                    </span>
+                    <span>Guide</span>
+                </button>
                 <button class="nav-item" id="aboutBtn" title="About Latexis">
                     <span class="nav-icon">i</span>
                     <span>About</span>
@@ -956,6 +966,317 @@
         </svg>
         Add Note
     </button>
+</div>
+
+<!-- Prompt Guide Modal -->
+<div class="modal-overlay" id="promptGuideModal">
+    <div class="modal modal-lg">
+        <button class="modal-close" id="closePromptGuideModal">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+        </button>
+        <div class="modal-content prompt-guide-content">
+            <div class="guide-header">
+                <div class="guide-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <h2 class="modal-title">Prompt Guide</h2>
+                <p class="guide-subtitle">Learn how to craft effective prompts for better results</p>
+            </div>
+
+            <!-- Guide Tabs -->
+            <div class="guide-tabs">
+                <button class="guide-tab active" data-tab="documents">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <path d="M14 2v6h6"/>
+                    </svg>
+                    Documents
+                </button>
+                <button class="guide-tab" data-tab="summarize">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="4" y1="6" x2="20" y2="6"/>
+                        <line x1="4" y1="12" x2="14" y2="12"/>
+                        <line x1="4" y1="18" x2="18" y2="18"/>
+                    </svg>
+                    Summarize
+                </button>
+                <button class="guide-tab" data-tab="highlight">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                    </svg>
+                    Highlight
+                </button>
+                <button class="guide-tab" data-tab="tips">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="16" x2="12" y2="12"/>
+                        <line x1="12" y1="8" x2="12.01" y2="8"/>
+                    </svg>
+                    Pro Tips
+                </button>
+            </div>
+
+            <!-- Documents Tab -->
+            <div class="guide-tab-content active" data-panel="documents">
+                <div class="guide-section">
+                    <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 8px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>Creating Documents</h3>
+                    <p>Latexis can generate various LaTeX documents. Be specific about what you need:</p>
+                    
+                    <div class="prompt-examples">
+                        <div class="prompt-card">
+                            <div class="prompt-card-header">
+                                <span class="prompt-type cv">CV / Resume</span>
+                            </div>
+                            <div class="prompt-example">
+                                <span class="example-label">Example:</span>
+                                <code>"Create a professional CV for John Smith, a software engineer with 5 years experience at Google, specializing in Python and machine learning. Include education at MIT."</code>
+                            </div>
+                            <div class="prompt-tips">
+                                <strong>Include:</strong> Name, profession, experience, skills, education
+                            </div>
+                        </div>
+
+                        <div class="prompt-card">
+                            <div class="prompt-card-header">
+                                <span class="prompt-type thesis">Thesis Cover</span>
+                            </div>
+                            <div class="prompt-example">
+                                <span class="example-label">Example:</span>
+                                <code>"Create a thesis cover page for 'Machine Learning in Healthcare' by Ahmed Ben Ali, supervised by Dr. Sarah Johnson, at the National School of Applied Sciences, 2026."</code>
+                            </div>
+                            <div class="prompt-tips">
+                                <strong>Include:</strong> Title, author, supervisor, institution, year
+                            </div>
+                        </div>
+
+                        <div class="prompt-card">
+                            <div class="prompt-card-header">
+                                <span class="prompt-type report">Report</span>
+                            </div>
+                            <div class="prompt-example">
+                                <span class="example-label">Example:</span>
+                                <code>"Generate a technical report template about renewable energy with sections for introduction, methodology, results, and conclusion."</code>
+                            </div>
+                            <div class="prompt-tips">
+                                <strong>Include:</strong> Topic, sections needed, any specific requirements
+                            </div>
+                        </div>
+
+                        <div class="prompt-card">
+                            <div class="prompt-card-header">
+                                <span class="prompt-type letter">Letter</span>
+                            </div>
+                            <div class="prompt-example">
+                                <span class="example-label">Example:</span>
+                                <code>"Write a formal cover letter for a data scientist position at Microsoft, highlighting experience in AI and big data analytics."</code>
+                            </div>
+                            <div class="prompt-tips">
+                                <strong>Include:</strong> Position, company, key qualifications
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summarize Tab -->
+            <div class="guide-tab-content" data-panel="summarize">
+                <div class="guide-section">
+                    <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 8px;"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="10" x2="20" y2="10"/><line x1="4" y1="14" x2="14" y2="14"/><line x1="4" y1="18" x2="10" y2="18"/></svg>Document Summarization</h3>
+                    <p>Upload documents and get AI-powered summaries at your preferred length.</p>
+
+                    <div class="summary-lengths">
+                        <div class="length-card">
+                            <div class="length-header">
+                                <span class="length-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+                                <span class="length-name">Short</span>
+                            </div>
+                            <p>2-3 key sentences. Perfect for quick overview or when you need the main point fast.</p>
+                            <span class="length-use">Best for: Quick decisions, busy schedules</span>
+                        </div>
+
+                        <div class="length-card featured">
+                            <div class="length-header">
+                                <span class="length-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><path d="M5 12h14"/><rect x="3" y="8" width="4" height="8" rx="1"/><rect x="17" y="8" width="4" height="8" rx="1"/></svg></span>
+                                <span class="length-name">Medium</span>
+                            </div>
+                            <p>Balanced summary with main points and supporting details. Good for most use cases.</p>
+                            <span class="length-use">Best for: Study notes, meeting prep</span>
+                        </div>
+
+                        <div class="length-card">
+                            <div class="length-header">
+                                <span class="length-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg></span>
+                                <span class="length-name">Long</span>
+                            </div>
+                            <p>Comprehensive summary preserving most details and nuances from the original.</p>
+                            <span class="length-use">Best for: Research, thorough understanding</span>
+                        </div>
+                    </div>
+
+                    <div class="guide-tip-box">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 16v-4M12 8h.01"/>
+                        </svg>
+                        <div>
+                            <strong>Supported formats:</strong> PDF, DOC, DOCX, TXT (max 10MB)
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Highlight Tab -->
+            <div class="guide-tab-content" data-panel="highlight">
+                <div class="guide-section">
+                    <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 8px;"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Highlighting & Notes</h3>
+                    <p>Use the Highlight tool to analyze documents and add personal annotations.</p>
+
+                    <div class="highlight-features">
+                        <div class="feature-item">
+                            <div class="feature-icon" style="background: rgba(255, 161, 245, 0.2);">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
+                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5"/>
+                                </svg>
+                            </div>
+                            <div class="feature-text">
+                                <strong>AI Insights</strong>
+                                <p>Automatically identifies key points, definitions, and important passages</p>
+                            </div>
+                        </div>
+
+                        <div class="feature-item">
+                            <div class="feature-icon" style="background: rgba(254, 240, 138, 0.3);">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="2">
+                                    <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                </svg>
+                            </div>
+                            <div class="feature-text">
+                                <strong>Custom Highlights</strong>
+                                <p>Select text and choose from 4 colors: Yellow, Green, Blue, Pink</p>
+                            </div>
+                        </div>
+
+                        <div class="feature-item">
+                            <div class="feature-icon" style="background: rgba(134, 239, 172, 0.3);">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                            </div>
+                            <div class="feature-text">
+                                <strong>Notes with Tags</strong>
+                                <p>Add notes and categorize them: General, Important, Question, Idea</p>
+                            </div>
+                        </div>
+
+                        <div class="feature-item">
+                            <div class="feature-icon" style="background: rgba(147, 197, 253, 0.3);">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                                    <line x1="4" y1="9" x2="20" y2="9"/>
+                                    <line x1="4" y1="15" x2="20" y2="15"/>
+                                    <line x1="10" y1="3" x2="8" y2="21"/>
+                                </svg>
+                            </div>
+                            <div class="feature-text">
+                                <strong>Keywords</strong>
+                                <p>Click any keyword to find and highlight all occurrences in the document</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="guide-tip-box">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        <div>
+                            <strong>Export your work:</strong> Click "Export" to download all highlights and notes as a text file.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pro Tips Tab -->
+            <div class="guide-tab-content" data-panel="tips">
+                <div class="guide-section">
+                    <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 8px;"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/></svg>Pro Tips for Better Results</h3>
+                    
+                    <div class="tips-grid">
+                        <div class="tip-card">
+                            <div class="tip-number">1</div>
+                            <div class="tip-content">
+                                <strong>Be Specific</strong>
+                                <p>Instead of "make a CV", say "Create a CV for a marketing manager with 8 years experience in digital advertising"</p>
+                            </div>
+                        </div>
+
+                        <div class="tip-card">
+                            <div class="tip-number">2</div>
+                            <div class="tip-content">
+                                <strong>Include Details</strong>
+                                <p>Names, dates, institutions, and specific achievements make documents more complete and personalized</p>
+                            </div>
+                        </div>
+
+                        <div class="tip-card">
+                            <div class="tip-number">3</div>
+                            <div class="tip-content">
+                                <strong>Specify the Style</strong>
+                                <p>Want a modern or classic look? Academic or creative? Tell Latexis your preferred style</p>
+                            </div>
+                        </div>
+
+                        <div class="tip-card">
+                            <div class="tip-number">4</div>
+                            <div class="tip-content">
+                                <strong>Request Sections</strong>
+                                <p>Mention specific sections you need: "Include a skills section, project portfolio, and references"</p>
+                            </div>
+                        </div>
+
+                        <div class="tip-card">
+                            <div class="tip-number">5</div>
+                            <div class="tip-content">
+                                <strong>Iterate & Refine</strong>
+                                <p>Ask follow-up questions like "Add more spacing" or "Make the header larger" to refine the output</p>
+                            </div>
+                        </div>
+
+                        <div class="tip-card">
+                            <div class="tip-number">6</div>
+                            <div class="tip-content">
+                                <strong>Use Templates</strong>
+                                <p>Click the template chips on the welcome screen for quick starts with common document types</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="quick-prompts">
+                        <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Quick Start Prompts</h4>
+                        <div class="quick-prompt-list">
+                            <button class="quick-prompt" onclick="useQuickPrompt('Create a professional CV for [Your Name], a [profession] with experience in [skills]')">
+                                Professional CV
+                            </button>
+                            <button class="quick-prompt" onclick="useQuickPrompt('Generate a thesis cover page for [Title] by [Author], supervised by [Supervisor] at [University], [Year]')">
+                                Thesis Cover
+                            </button>
+                            <button class="quick-prompt" onclick="useQuickPrompt('Write a formal business letter requesting [purpose] addressed to [recipient]')">
+                                Business Letter
+                            </button>
+                            <button class="quick-prompt" onclick="useQuickPrompt('Create a technical report template about [topic] with introduction, methodology, results, and conclusion sections')">
+                                Technical Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
     <script src="app.js"></script>
