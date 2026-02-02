@@ -1,5 +1,5 @@
-"""
-LaTeX AI - Intelligent Backend Server
+﻿"""
+Latexis - Intelligent Backend Server
 By TIKA Imad - ENSA
 National School of Applied Sciences
 
@@ -10,7 +10,7 @@ Features:
 - Document improvement endpoint
 - Multiple document types support
 """
-
+from datetime import datetime
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from groq import Groq
@@ -19,7 +19,8 @@ import re
 import subprocess
 import tempfile
 import shutil
-from datetime import datetime
+import glob
+
 
 # ============================================================================
 # Flask App Initialization
@@ -28,102 +29,355 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 
-# Initialize Groq client - Replace with your API key
-GROQ_API_KEY = "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"
-client = Groq(api_key=GROQ_API_KEY)
+
+# ============================================================================
+# pdflatex Path Detection (Windows TeX Live support)
+# ============================================================================
+
+def find_pdflatex():
+    """
+    Find pdflatex executable. First checks PATH, then common installation locations.
+    Returns the full path to pdflatex or None if not found.
+    """
+    # First, check if it's in PATH
+    pdflatex_path = shutil.which('pdflatex')
+    if pdflatex_path:
+        return pdflatex_path
+    
+    # Common installation paths on Windows
+    common_paths = [
+        # TeX Live (various years)
+        r"C:\texlive\*\bin\windows\pdflatex.exe",
+        r"C:\texlive\*\bin\win32\pdflatex.exe",
+        # MiKTeX
+        r"C:\Program Files\MiKTeX*\miktex\bin\x64\pdflatex.exe",
+        r"C:\Program Files (x86)\MiKTeX*\miktex\bin\pdflatex.exe",
+        r"C:\Users\*\AppData\Local\Programs\MiKTeX*\miktex\bin\x64\pdflatex.exe",
+        # Program Files TeX Live
+        r"C:\Program Files\texlive\*\bin\windows\pdflatex.exe",
+    ]
+    
+    for pattern in common_paths:
+        matches = glob.glob(pattern)
+        if matches:
+            # Return the most recent version (sorted descending)
+            matches.sort(reverse=True)
+            return matches[0]
+    
+    return None
+
+# Cache the pdflatex path at startup
+PDFLATEX_PATH = find_pdflatex()
+if PDFLATEX_PATH:
+    print(f"[INFO] Found pdflatex at: {PDFLATEX_PATH}")
+else:
+    print("[WARNING] pdflatex not found. PDF compilation will not be available.")
+
+# Default Groq API Key (fallback - limited usage)
+DEFAULT_GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "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")
+
+# Rate limiting for default key users (requests per IP per hour)
+from collections import defaultdict
+import time
+
+rate_limits = defaultdict(list)  # IP -> list of timestamps
+MAX_REQUESTS_PER_HOUR = 5  # Limit for users using the default API key
+MAX_REQUESTS_CUSTOM_KEY = 100  # Higher limit for users with their own key
+
+def check_rate_limit(ip_address, using_custom_key=False):
+    """
+    Check if the user has exceeded rate limits.
+    Returns (is_allowed, remaining_requests, reset_time_seconds)
+    """
+    max_requests = MAX_REQUESTS_CUSTOM_KEY if using_custom_key else MAX_REQUESTS_PER_HOUR
+    current_time = time.time()
+    hour_ago = current_time - 3600
+    
+    # Clean old timestamps
+    rate_limits[ip_address] = [ts for ts in rate_limits[ip_address] if ts > hour_ago]
+    
+    remaining = max_requests - len(rate_limits[ip_address])
+    
+    if remaining <= 0:
+        # Calculate reset time
+        oldest_request = min(rate_limits[ip_address])
+        reset_time = int(oldest_request + 3600 - current_time)
+        return False, 0, reset_time
+    
+    return True, remaining, 0
+
+def record_request(ip_address):
+    """Record a request timestamp for rate limiting"""
+    rate_limits[ip_address].append(time.time())
+
+def get_groq_client(api_key=None):
+    """Get a Groq client with the specified or default API key"""
+    key = api_key if api_key else DEFAULT_GROQ_API_KEY
+    return Groq(api_key=key)
 
 # Conversation history storage (in production, use Redis or database)
 conversations = {}
 
 # ============================================================================
-# System Prompt - The Brain of LaTeX AI
+# System Prompt - The Brain of Latexis
 # ============================================================================
 
 def get_system_prompt():
-    """Enhanced system prompt for intelligent LaTeX generation"""
-    return """You are LaTeX AI, an expert LaTeX document generator created by TIKA Imad at the National School of Applied Sciences. You are highly skilled in creating professional, well-structured, and visually appealing LaTeX documents.
+    """System prompt for LaTeX generation"""
+    return r"""You are Latexis, an expert LaTeX document generator. You ONLY output valid, compilable LaTeX code.
 
-## Your Core Identity:
-- You are a specialized AI that ONLY generates LaTeX code
-- You understand natural language requests and convert them to professional LaTeX documents
-- You have deep knowledge of LaTeX packages, document classes, and best practices
+ABSOLUTE RULES:
+1. Output ONLY pure LaTeX code - NO explanations, NO markdown, NO text before or after
+2. Start with \documentclass and end with \end{document}
+3. NEVER use \includegraphics - use TikZ rectangles for image placeholders
+4. ESCAPE special characters: \_ for underscore, \& for ampersand, \% for percent, \# for hash
+5. Ensure ALL braces {} and environments are properly closed
+6. Use ONLY packages that are standard in TeX Live
 
-## Document Types You Excel At:
-1. **CVs/Resumes** - Modern, professional designs using moderncv, awesome-cv, or custom TikZ
-2. **Thesis/PFE Cover Pages** - University-style covers with logos, titles, supervisors
-3. **Cover Letters** - Professional letters for job applications
-4. **Technical Reports** - Well-structured reports with sections, figures, tables
-5. **Beamer Presentations** - Beautiful slides with modern themes
-6. **Academic Articles** - IEEE, ACM, or custom article formats
-7. **Invoices/Formal Documents** - Clean, professional layouts
+=== CV/RESUME TEMPLATE ===
+Create a clean, modern, single-column CV with this exact structure:
 
-## STRICT Rules You MUST Follow:
+\documentclass[a4paper,11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=0.75in]{geometry}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
 
-### Output Format:
-1. ALWAYS return ONLY valid, compilable LaTeX code
-2. NEVER include any explanations, comments, or text outside the LaTeX code
-3. NEVER use markdown code blocks (no ```latex, ```tex, or ```)
-4. Start DIRECTLY with \\documentclass{...}
-5. End with \\end{document}
-6. Ensure the code compiles without errors
+% Define subtle color for section lines
+\definecolor{headercolor}{RGB}{70,70,70}
 
-### Code Quality:
-1. Use appropriate document class for each document type
-2. Include ALL necessary packages at the beginning
-3. Use UTF-8 encoding: \\usepackage[utf8]{inputenc}
-4. For French documents: \\usepackage[french]{babel}
-5. Use proper typography: \\usepackage[T1]{fontenc}
-6. Ensure all environments and brackets are properly closed
-7. Escape special LaTeX characters: #, $, %, &, _, {, }, ~, ^
+% Section formatting - clean underline style
+\titleformat{\section}{\large\bfseries\color{headercolor}}{}{0em}{}[\vspace{-0.5em}\rule{\textwidth}{0.5pt}\vspace{-0.5em}]
+\titlespacing*{\section}{0pt}{1.5em}{1em}
 
-### Visual Design:
-1. Use colors tastefully with xcolor package
-2. Add proper spacing and margins with geometry package
-3. Use modern fonts when appropriate (helvet, palatino, etc.)
-4. Include icons with fontawesome5 for CVs
-5. Create visually appealing layouts with TikZ when needed
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
 
-### Content Handling:
-1. If specific information is not provided, use realistic placeholder text
-2. For names: use [Your Name], [Company Name], etc.
-3. For dates: use realistic date formats
-4. For contact info: use placeholder email/phone
-5. Always create COMPLETE documents, never partial code
+\begin{document}
 
-## Package Recommendations by Document Type:
+% HEADER - Name centered, contact info below
+\begin{center}
+{\LARGE\textbf{[Your Full Name]}}\\[0.4cm]
+[City, Country] \quad $\bullet$ \quad [your.email@example.com] \quad $\bullet$ \quad [+1 234 567 8900]\\[0.1cm]
+\href{https://linkedin.com/in/yourprofile}{linkedin.com/in/yourprofile} \quad $\bullet$ \quad \href{https://github.com/yourusername}{github.com/yourusername}
+\end{center}
 
-### For CVs:
-\\usepackage{moderncv} OR custom with:
-\\usepackage{tikz, fontawesome5, xcolor, geometry, hyperref}
+\vspace{0.5cm}
 
-### For Thesis Covers:
-\\usepackage{tikz, graphicx, geometry, setspace, fontenc}
+% PROFESSIONAL SUMMARY
+\section*{Professional Summary}
+A brief 2-3 sentence summary highlighting your key qualifications, years of experience, and what value you bring. Focus on your strongest skills and career objectives.
 
-### For Reports:
-\\usepackage{geometry, titlesec, tocloft, fancyhdr, graphicx, hyperref}
+% WORK EXPERIENCE
+\section*{Work Experience}
+\textbf{[Job Title]} \hfill [Start Date] -- [End Date]\\
+\textit{[Company Name], [Location]}
+\begin{itemize}[leftmargin=1.5em, itemsep=2pt, topsep=4pt]
+\item Key accomplishment or responsibility with measurable impact
+\item Another achievement demonstrating your skills and contributions
+\item Additional responsibility showing leadership or technical expertise
+\end{itemize}
 
-### For Presentations:
-\\documentclass{beamer}
-\\usetheme{Madrid/Berlin/Copenhagen} or custom
+\vspace{0.3cm}
+\textbf{[Previous Job Title]} \hfill [Start Date] -- [End Date]\\
+\textit{[Company Name], [Location]}
+\begin{itemize}[leftmargin=1.5em, itemsep=2pt, topsep=4pt]
+\item Description of responsibilities and achievements
+\item Another key contribution to the organization
+\end{itemize}
 
-### For Letters:
-\\documentclass{letter} OR \\usepackage{newlfm}
+% EDUCATION
+\section*{Education}
+\textbf{[Degree Name]} \hfill [Graduation Year]\\
+\textit{[University Name], [Location]}\\
+Relevant coursework, honors, or GPA if applicable
 
-## Response Examples:
+% SKILLS
+\section*{Skills}
+\textbf{Technical:} [Skill 1], [Skill 2], [Skill 3], [Skill 4], [Skill 5]\\
+\textbf{Tools:} [Tool 1], [Tool 2], [Tool 3], [Tool 4]\\
+\textbf{Soft Skills:} [Communication], [Leadership], [Problem-solving]
 
-When asked "Create a CV for a software developer", respond with:
-\\documentclass[11pt,a4paper]{moderncv}
-... (complete LaTeX code)
-\\end{document}
+% LANGUAGES
+\section*{Languages}
+[Language 1] (Native) \quad $\bullet$ \quad [Language 2] (Fluent) \quad $\bullet$ \quad [Language 3] (Intermediate)
 
-When asked "Make changes to add more skills", respond with the COMPLETE modified document, not just the changed parts.
+\end{document}
 
-## Remember:
-- Quality over quantity
-- Clean, readable code structure
-- Professional appearance
-- Complete, compilable documents
-- No explanations, ONLY LaTeX code"""
+KEY CV RULES:
+- Single column layout only - NO two-column or sidebar designs
+- Use \section*{} for section headers (no numbering)
+- Clean horizontal rules under section titles
+- Consistent spacing with \vspace and itemize options
+- Use \hfill to align dates to the right
+- Use \textbf for titles, \textit for company/institution names
+- Use $\bullet$ as separator in contact info and languages
+- Keep it minimal - no icons, no colors except subtle gray for headers
+
+=== THESIS/PFE COVER TEMPLATE ===
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{tikz}
+\usepackage{setspace}
+\usepackage{graphicx}
+
+\begin{document}
+\begin{titlepage}
+\centering
+\vspace*{1cm}
+{\Large\textbf{[University Name]}}\\\vspace{0.3cm}
+{\large [Faculty/Department Name]}\\\vspace{1.5cm}
+\begin{tikzpicture}
+\draw[fill=gray!20, rounded corners] (0,0) rectangle (4,3);
+\node at (2,1.5) {University Logo};
+\end{tikzpicture}\\\vspace{1.5cm}
+{\LARGE\textbf{[Thesis Title]}}\\\vspace{0.5cm}
+{\large [Subtitle if any]}\\\vspace{2cm}
+{\large Presented by:}\\
+{\Large\textbf{[Student Name]}}\\\vspace{1cm}
+{\large Supervised by:}\\
+{\large [Supervisor Name]}\\\vspace{1.5cm}
+{\large Academic Year: [Year]}\\\vspace{0.5cm}
+{\large Submitted: [Date]}
+\end{titlepage}
+\end{document}
+
+=== TECHNICAL REPORT TEMPLATE ===
+\documentclass[11pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{fancyhdr}
+\usepackage[hidelinks]{hyperref}
+\usepackage{titlesec}
+\usepackage{setspace}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\titleformat{\chapter}[display]{\normalfont\huge\bfseries}{\chaptertitlename\ \thechapter}{20pt}{\Huge}
+
+\begin{document}
+\begin{titlepage}
+\centering
+\vspace*{2cm}
+{\Huge\textbf{[Report Title]}}\\\vspace{1cm}
+{\Large [Subtitle]}\\\vspace{2cm}
+{\large Author: [Your Name]}\\\vspace{0.5cm}
+{\large Organization: [Company/University]}\\\vspace{0.5cm}
+{\large Date: \today}
+\end{titlepage}
+\tableofcontents
+\newpage
+\chapter{Introduction}
+[Introduction content here]
+\chapter{Methodology}
+[Methodology content here]
+\chapter{Results}
+[Results content here]
+\chapter{Conclusion}
+[Conclusion content here]
+\end{document}
+
+=== BEAMER PRESENTATION TEMPLATE ===
+\documentclass{beamer}
+\usetheme{Madrid}
+\usecolortheme{default}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\title{[Presentation Title]}
+\subtitle{[Subtitle]}
+\author{[Your Name]}
+\institute{[Institution]}
+\date{\today}
+
+\begin{document}
+\begin{frame}
+\titlepage
+\end{frame}
+\begin{frame}{Outline}
+\tableofcontents
+\end{frame}
+\section{Introduction}
+\begin{frame}{Introduction}
+\begin{itemize}
+\item First point
+\item Second point
+\item Third point
+\end{itemize}
+\end{frame}
+\section{Main Content}
+\begin{frame}{Main Content}
+Content goes here with bullet points or text.
+\end{frame}
+\section{Conclusion}
+\begin{frame}{Conclusion}
+\begin{itemize}
+\item Summary point 1
+\item Summary point 2
+\end{itemize}
+\end{frame}
+\begin{frame}
+\centering
+{\Huge Thank You!}\\[1cm]
+{\large Questions?}
+\end{frame}
+\end{document}
+
+=== COVER LETTER TEMPLATE ===
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{parskip}
+
+\begin{document}
+\begin{flushleft}
+[Your Name]\\
+[Your Address]\\
+[City, Country]\\
+[Your Email]\\
+[Your Phone]
+\end{flushleft}
+\vspace{1cm}
+\today
+\vspace{1cm}
+\begin{flushleft}
+[Recipient Name]\\
+[Recipient Title]\\
+[Company Name]\\
+[Company Address]
+\end{flushleft}
+\vspace{0.5cm}
+Dear [Recipient Name],
+
+[Opening paragraph about the position and your interest.]
+
+[Body paragraph about your qualifications and experience.]
+
+[Closing paragraph with call to action.]
+
+Sincerely,\\[1cm]
+[Your Name]
+\end{document}
+
+CRITICAL RULES:
+- Copy the exact template structure above for each document type
+- Fill placeholders like [Your Name] with example content
+- NEVER use fontawesome, fontawesome5, or any icon packages
+- NEVER use \includegraphics with file paths
+- Always escape: \_ \& \% \# in text
+- Use $|$ for separator in CV headers (not plain |)
+- Ensure all \begin{} have matching \end{}"""
 
 
 # ============================================================================
@@ -202,6 +456,69 @@ def detect_language(prompt):
 # API Endpoints
 # ============================================================================
 
+@app.route('/status', methods=['GET'])
+def get_status():
+    """
+    Get API status and rate limit info for the current user
+    """
+    ip_address = request.remote_addr or 'unknown'
+    is_allowed, remaining, reset_time = check_rate_limit(ip_address, using_custom_key=False)
+    
+    return jsonify({
+        'success': True,
+        'free_requests_remaining': remaining,
+        'max_free_requests_per_hour': MAX_REQUESTS_PER_HOUR,
+        'reset_in_seconds': reset_time if not is_allowed else 0,
+        'pdflatex_available': PDFLATEX_PATH is not None
+    })
+
+
+@app.route('/validate-key', methods=['POST'])
+def validate_api_key():
+    """
+    Validate a user's Groq API key
+    """
+    try:
+        data = request.get_json()
+        api_key = data.get('api_key', '').strip()
+        
+        if not api_key:
+            return jsonify({
+                'success': False,
+                'valid': False,
+                'error': 'No API key provided'
+            })
+        
+        # Test the API key with a minimal request
+        test_client = Groq(api_key=api_key)
+        test_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": "Hi"}],
+            max_tokens=5
+        )
+        
+        return jsonify({
+            'success': True,
+            'valid': True,
+            'message': 'API key is valid!'
+        })
+        
+    except Exception as e:
+        error_msg = str(e).lower()
+        if 'invalid' in error_msg or 'authentication' in error_msg or 'api key' in error_msg:
+            return jsonify({
+                'success': True,
+                'valid': False,
+                'error': 'Invalid API key. Please check and try again.'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'valid': False,
+                'error': f'Error validating key: {str(e)}'
+            })
+
+
 @app.route('/generate', methods=['POST'])
 def generate_latex():
     """
@@ -224,11 +541,27 @@ def generate_latex():
         data = request.get_json()
         prompt = data.get('prompt', '').strip()
         session_id = data.get('session_id', 'default')
+        user_api_key = data.get('api_key', '').strip()  # User's custom API key
         
         if not prompt:
             return jsonify({
                 'success': False, 
                 'error': 'No prompt provided. Please describe the document you want to create.'
+            })
+        
+        # Get client IP for rate limiting
+        ip_address = request.remote_addr or 'unknown'
+        using_custom_key = bool(user_api_key)
+        
+        # Check rate limits (only strict for default key users)
+        is_allowed, remaining, reset_time = check_rate_limit(ip_address, using_custom_key)
+        
+        if not is_allowed and not using_custom_key:
+            return jsonify({
+                'success': False,
+                'error': f'Rate limit exceeded. You have used your {MAX_REQUESTS_PER_HOUR} free requests this hour. Please add your own Groq API key to continue, or wait {reset_time // 60} minutes.',
+                'rate_limited': True,
+                'reset_in_seconds': reset_time
             })
         
         # Initialize conversation history for this session
@@ -251,6 +584,9 @@ def generate_latex():
         if language == 'french':
             messages[-1]["content"] += "\n\n[Note: The user is writing in French. Use French babel package and French content where appropriate.]"
         
+        # Get Groq client with user's key or default
+        client = get_groq_client(user_api_key if using_custom_key else None)
+        
         # Generate response using Groq
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
@@ -259,6 +595,10 @@ def generate_latex():
             max_tokens=8000,
             top_p=0.9,
         )
+        
+        # Record the request for rate limiting (only for default key users)
+        if not using_custom_key:
+            record_request(ip_address)
         
         # Extract and clean LaTeX code
         raw_response = response.choices[0].message.content
@@ -321,11 +661,79 @@ def compile_to_pdf():
             })
         
         # Check if pdflatex is available
-        if not shutil.which('pdflatex'):
+        if not PDFLATEX_PATH:
             return jsonify({
                 'success': False,
                 'error': 'pdflatex is not installed on the server. Please use Overleaf for PDF compilation.'
             })
+        
+        # Sanitize Unicode characters that pdflatex can't handle
+        unicode_replacements = {
+            '≠': r'$\neq$',
+            '≤': r'$\leq$',
+            '≥': r'$\geq$',
+            '→': r'$\rightarrow$',
+            '←': r'$\leftarrow$',
+            '↔': r'$\leftrightarrow$',
+            '⇒': r'$\Rightarrow$',
+            '⇐': r'$\Leftarrow$',
+            '∞': r'$\infty$',
+            '∑': r'$\sum$',
+            '∏': r'$\prod$',
+            '∫': r'$\int$',
+            '√': r'$\sqrt{}$',
+            '±': r'$\pm$',
+            '×': r'$\times$',
+            '÷': r'$\div$',
+            '°': r'$^\circ$',
+            '•': r'\textbullet{}',
+            '–': '--',
+            '—': '---',
+            '"': "``",
+            '"': "''",
+            ''': "`",
+            ''': "'",
+            '…': '...',
+            '©': r'\textcopyright{}',
+            '®': r'\textregistered{}',
+            '™': r'\texttrademark{}',
+            '€': r'\texteuro{}',
+            '£': r'\textsterling{}',
+            '¥': r'\textyen{}',
+            'α': r'$\alpha$',
+            'β': r'$\beta$',
+            'γ': r'$\gamma$',
+            'δ': r'$\delta$',
+            'π': r'$\pi$',
+            'σ': r'$\sigma$',
+            'μ': r'$\mu$',
+            'λ': r'$\lambda$',
+            'Ω': r'$\Omega$',
+            '∈': r'$\in$',
+            '∉': r'$\notin$',
+            '⊂': r'$\subset$',
+            '⊃': r'$\supset$',
+            '∪': r'$\cup$',
+            '∩': r'$\cap$',
+            '∅': r'$\emptyset$',
+            '∀': r'$\forall$',
+            '∃': r'$\exists$',
+            '¬': r'$\neg$',
+            '∧': r'$\land$',
+            '∨': r'$\lor$',
+            '⊕': r'$\oplus$',
+            '⊗': r'$\otimes$',
+            '≈': r'$\approx$',
+            '≡': r'$\equiv$',
+            '∝': r'$\propto$',
+            '∂': r'$\partial$',
+            '∇': r'$\nabla$',
+            '′': r"$'$",
+            '″': r"$''$",
+        }
+        
+        for char, replacement in unicode_replacements.items():
+            latex_code = latex_code.replace(char, replacement)
         
         # Create temporary directory for compilation
         temp_dir = tempfile.mkdtemp()
@@ -341,7 +749,7 @@ def compile_to_pdf():
             for i in range(2):
                 result = subprocess.run(
                     [
-                        'pdflatex',
+                        PDFLATEX_PATH,
                         '-interaction=nonstopmode',
                         '-halt-on-error',
                         '-output-directory', temp_dir,
@@ -363,7 +771,9 @@ def compile_to_pdf():
                 )
             else:
                 # PDF not created - return error with log
-                error_log = result.stdout + "\n" + result.stderr
+                stdout = result.stdout or ''
+                stderr = result.stderr or ''
+                error_log = stdout + "\n" + stderr
                 
                 # Extract relevant error messages
                 error_lines = []
@@ -421,6 +831,7 @@ def improve_document():
         data = request.get_json()
         latex_code = data.get('latex_code', '').strip()
         instruction = data.get('instruction', '').strip()
+        user_api_key = data.get('api_key', '').strip()  # User's custom API key
         
         if not latex_code:
             return jsonify({
@@ -432,6 +843,21 @@ def improve_document():
             return jsonify({
                 'success': False, 
                 'error': 'No improvement instruction provided'
+            })
+        
+        # Get client IP for rate limiting
+        ip_address = request.remote_addr or 'unknown'
+        using_custom_key = bool(user_api_key)
+        
+        # Check rate limits (only strict for default key users)
+        is_allowed, remaining, reset_time = check_rate_limit(ip_address, using_custom_key)
+        
+        if not is_allowed and not using_custom_key:
+            return jsonify({
+                'success': False,
+                'error': f'Rate limit exceeded. Please add your own Groq API key to continue, or wait {reset_time // 60} minutes.',
+                'rate_limited': True,
+                'reset_in_seconds': reset_time
             })
         
         # Create prompt for improvement
@@ -455,12 +881,19 @@ IMPORTANT:
             {"role": "user", "content": prompt}
         ]
         
+        # Get Groq client with user's key or default
+        client = get_groq_client(user_api_key if using_custom_key else None)
+        
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=messages,
             temperature=0.3,
             max_tokens=8000,
         )
+        
+        # Record the request for rate limiting (only for default key users)
+        if not using_custom_key:
+            record_request(ip_address)
         
         improved_code = extract_latex_code(response.choices[0].message.content)
         
@@ -482,7 +915,139 @@ IMPORTANT:
             'error': f'Error improving document: {str(e)}'
         })
 
+@app.route('/preview', methods=['POST'])
+def preview_latex_pdf():
+    """
+    Compile LaTeX code to PDF and stream it for inline preview.
+    Request: { latex_code: "...", filename: "..." }
+    """
+    try:
+        data = request.get_json()
+        latex_code = data.get('latex_code', '').strip()
+        filename = data.get('filename', 'preview')
 
+        if not latex_code:
+            return jsonify({'success': False, 'error': 'No LaTeX code provided'}), 400
+
+        if not PDFLATEX_PATH:
+            return jsonify({'success': False, 'error': 'pdflatex is not installed on the server.'}), 500
+
+        # Pre-process: Replace external image references with placeholders
+        # This prevents errors from missing image files
+        import re as regex_module
+        
+        # Pattern to match \includegraphics with various options
+        img_pattern = r'\\includegraphics(\[[^\]]*\])?\{[^}]+\.(png|jpg|jpeg|pdf|eps|gif)\}'
+        
+        # Replace with a placeholder rule
+        def replace_image(match):
+            return r'\fbox{\parbox{4cm}{\centering\vspace{1cm}[Image Placeholder]\vspace{1cm}}}'
+        
+        latex_code_clean = regex_module.sub(img_pattern, replace_image, latex_code, flags=regex_module.IGNORECASE)
+        
+        # Sanitize Unicode characters that pdflatex can't handle
+        unicode_replacements = {
+            '≠': r'$\neq$',
+            '≤': r'$\leq$',
+            '≥': r'$\geq$',
+            '→': r'$\rightarrow$',
+            '←': r'$\leftarrow$',
+            '↔': r'$\leftrightarrow$',
+            '⇒': r'$\Rightarrow$',
+            '⇐': r'$\Leftarrow$',
+            '∞': r'$\infty$',
+            '∑': r'$\sum$',
+            '∏': r'$\prod$',
+            '∫': r'$\int$',
+            '√': r'$\sqrt{}$',
+            '±': r'$\pm$',
+            '×': r'$\times$',
+            '÷': r'$\div$',
+            '°': r'$^\circ$',
+            '•': r'\textbullet{}',
+            '–': '--',
+            '—': '---',
+            '"': "``",
+            '"': "''",
+            ''': "`",
+            ''': "'",
+            '…': '...',
+            '©': r'\textcopyright{}',
+            '®': r'\textregistered{}',
+            '™': r'\texttrademark{}',
+            '€': r'\texteuro{}',
+            '£': r'\textsterling{}',
+            '¥': r'\textyen{}',
+            'α': r'$\alpha$',
+            'β': r'$\beta$',
+            'γ': r'$\gamma$',
+            'δ': r'$\delta$',
+            'π': r'$\pi$',
+            'σ': r'$\sigma$',
+            'μ': r'$\mu$',
+            'λ': r'$\lambda$',
+            'Ω': r'$\Omega$',
+            '∈': r'$\in$',
+            '∉': r'$\notin$',
+            '⊂': r'$\subset$',
+            '⊃': r'$\supset$',
+            '∪': r'$\cup$',
+            '∩': r'$\cap$',
+            '∅': r'$\emptyset$',
+            '∀': r'$\forall$',
+            '∃': r'$\exists$',
+            '¬': r'$\neg$',
+            '∧': r'$\land$',
+            '∨': r'$\lor$',
+            '⊕': r'$\oplus$',
+            '⊗': r'$\otimes$',
+            '≈': r'$\approx$',
+            '≡': r'$\equiv$',
+            '∝': r'$\propto$',
+            '∂': r'$\partial$',
+            '∇': r'$\nabla$',
+            '′': r"$'$",
+            '″': r"$''$",
+        }
+        
+        for char, replacement in unicode_replacements.items():
+            latex_code_clean = latex_code_clean.replace(char, replacement)
+
+        temp_dir = tempfile.mkdtemp()
+        tex_path = os.path.join(temp_dir, f"{filename}.tex")
+        pdf_path = os.path.join(temp_dir, f"{filename}.pdf")
+        try:
+            with open(tex_path, 'w', encoding='utf-8') as f:
+                f.write(latex_code_clean)  # Use cleaned code without external images
+            # Run pdflatex twice pour un PDF correct
+            result = None
+            for i in range(2):
+                result = subprocess.run(
+                    [PDFLATEX_PATH,'-interaction=nonstopmode','-halt-on-error','-output-directory', temp_dir,tex_path],
+                    capture_output=True, text=True, timeout=60, cwd=temp_dir
+                )
+            if os.path.exists(pdf_path):
+                return send_file(pdf_path, mimetype='application/pdf')
+            else:
+                # Extract error details from log
+                error_msg = 'Failed to compile PDF.'
+                if result:
+                    stdout = result.stdout or ''
+                    stderr = result.stderr or ''
+                    log_output = stdout + '\n' + stderr
+                    # Find error lines
+                    error_lines = []
+                    for line in log_output.split('\n'):
+                        if any(x in line.lower() for x in ['error', '!', 'undefined', 'missing']):
+                            error_lines.append(line.strip())
+                    if error_lines:
+                        error_msg = '; '.join(error_lines[-5:])  # Last 5 error lines
+                return jsonify({'success': False, 'error': error_msg}), 500
+        finally:
+            try: shutil.rmtree(temp_dir, ignore_errors=True)
+            except: pass
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500 
 @app.route('/validate', methods=['POST'])
 def validate_latex():
     """
@@ -548,6 +1113,7 @@ def validate_latex():
 
 
 @app.route('/clear-history', methods=['POST'])
+
 def clear_history():
     """
     Clear conversation history for a session
@@ -579,6 +1145,338 @@ def clear_history():
             'error': str(e)
         })
 
+# Pour extraction texte DOCX et PDF
+try:
+    import docx
+except ImportError:
+    docx = None
+try:
+    import PyPDF2
+except ImportError:
+    PyPDF2 = None
+
+@app.route('/upload', methods=['POST'])
+def upload_extract_text():
+    """
+    Upload a PDF, DOC/DOCX, or TXT: extract plain text
+    Response: { success, extracted_text? }
+    """
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'error': 'No file uploaded.'})
+        f = request.files['file']
+        filename = f.filename
+        ext = os.path.splitext(filename)[1].lower()
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+            f.save(tmp.name)
+            tmp.flush()
+            tmp_path = tmp.name
+
+        extracted_text = None
+
+        if ext == '.pdf' and PyPDF2:
+            with open(tmp_path, "rb") as pdf_f:
+                pdf = PyPDF2.PdfReader(pdf_f)
+                text = []
+                for page in pdf.pages:
+                    content = page.extract_text() or ""
+                    text.append(content)
+                extracted_text = "\n\n".join(text)
+        elif ext in ('.docx', '.doc') and docx:
+            d = docx.Document(tmp_path)
+            extracted_text = "\n".join([p.text for p in d.paragraphs])
+        elif ext == '.txt':
+            with open(tmp_path, encoding="utf-8") as txt_f:
+                extracted_text = txt_f.read()
+        else:
+            extracted_text = None
+
+        os.unlink(tmp_path)
+        if not extracted_text:
+            return jsonify({'success': False, 'error': 'Could not extract text or unsupported format.'})
+
+        extracted_text = extracted_text[:5000]
+        return jsonify({'success': True, 'extracted_text': extracted_text})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+# ============================================================================
+# Document Summarization Endpoint
+# ============================================================================
+
+@app.route('/summarize', methods=['POST'])
+def summarize_document():
+    """
+    Upload a document and generate a concise summary of key points.
+    Request: multipart/form-data with 'file' field and optional 'summary_length' (short/medium/long)
+    Response: { success, summary, key_points[], main_topics[] }
+    """
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'error': 'No file uploaded.'})
+        
+        f = request.files['file']
+        filename = f.filename
+        ext = os.path.splitext(filename)[1].lower()
+        user_api_key = request.form.get('api_key', '').strip()
+        summary_length = request.form.get('summary_length', 'medium').strip().lower()
+        
+        # Validate summary length
+        if summary_length not in ('short', 'medium', 'long'):
+            summary_length = 'medium'
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+            f.save(tmp.name)
+            tmp.flush()
+            tmp_path = tmp.name
+
+        extracted_text = None
+
+        if ext == '.pdf' and PyPDF2:
+            with open(tmp_path, "rb") as pdf_f:
+                pdf = PyPDF2.PdfReader(pdf_f)
+                text = []
+                for page in pdf.pages:
+                    content = page.extract_text() or ""
+                    text.append(content)
+                extracted_text = "\n\n".join(text)
+        elif ext in ('.docx', '.doc') and docx:
+            d = docx.Document(tmp_path)
+            extracted_text = "\n".join([p.text for p in d.paragraphs])
+        elif ext == '.txt':
+            with open(tmp_path, encoding="utf-8") as txt_f:
+                extracted_text = txt_f.read()
+
+        os.unlink(tmp_path)
+        
+        if not extracted_text or len(extracted_text.strip()) < 50:
+            return jsonify({'success': False, 'error': 'Could not extract enough text from the document.'})
+
+        # Limit text length for API
+        extracted_text = extracted_text[:8000]
+
+        # Generate summary using Groq
+        client = get_groq_client(user_api_key if user_api_key else None)
+        
+        # Adjust summary instructions based on length preference
+        length_instructions = {
+            'short': "A brief 1 paragraph summary (50-80 words) focusing only on the absolute core message.",
+            'medium': "A balanced 2-3 paragraph summary (150-250 words) covering the main ideas, objectives, and key conclusions.",
+            'long': "A comprehensive 4-5 paragraph summary (400-600 words) providing detailed coverage of all major points, arguments, findings, and conclusions with supporting details."
+        }
+        
+        key_points_count = {
+            'short': 3,
+            'medium': 5,
+            'long': 8
+        }
+        
+        summary_prompt = f"""Analyze this document and provide a {summary_length} summary.
+
+DOCUMENT CONTENT:
+---
+{extracted_text}
+---
+
+Provide your response in the following JSON format ONLY (no other text):
+{{
+    "summary": "{length_instructions[summary_length]}",
+    "key_points": ["List exactly {key_points_count[summary_length]} key points from the document"],
+    "main_topics": ["Topic 1", "Topic 2", "Topic 3", "Topic 4"],
+    "document_type": "The type of document (e.g., Report, Essay, Article, Manual, Thesis, etc.)",
+    "word_count_estimate": approximate_word_count_number
+}}
+
+IMPORTANT: The summary length should be {summary_length.upper()} - {length_instructions[summary_length]}
+
+Output ONLY valid JSON, no explanations or markdown."""
+
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": "You are a document analysis expert. Always respond with valid JSON only. Pay close attention to the requested summary length."},
+                {"role": "user", "content": summary_prompt}
+            ],
+            temperature=0.3,
+            max_tokens=2500
+        )
+
+        result_text = response.choices[0].message.content.strip()
+        
+        # Try to parse JSON response
+        try:
+            # Clean up potential markdown code blocks
+            if result_text.startswith('```'):
+                result_text = re.sub(r'^```(?:json)?\n?', '', result_text)
+                result_text = re.sub(r'\n?```$', '', result_text)
+            
+            import json
+            result = json.loads(result_text)
+            
+            return jsonify({
+                'success': True,
+                'summary': result.get('summary', ''),
+                'key_points': result.get('key_points', []),
+                'main_topics': result.get('main_topics', []),
+                'document_type': result.get('document_type', 'Document'),
+                'word_count': result.get('word_count_estimate', len(extracted_text.split())),
+                'filename': filename,
+                'summary_length': summary_length
+            })
+        except json.JSONDecodeError:
+            # Fallback: return raw summary if JSON parsing fails
+            return jsonify({
+                'success': True,
+                'summary': result_text,
+                'key_points': [],
+                'main_topics': [],
+                'document_type': 'Document',
+                'word_count': len(extracted_text.split()),
+                'filename': filename,
+                'summary_length': summary_length
+            })
+
+    except Exception as e:
+        print(f"[ERROR] Summarize endpoint: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
+# ============================================================================
+# Text Highlighting and Key Information Detection Endpoint
+# ============================================================================
+
+@app.route('/analyze-highlights', methods=['POST'])
+def analyze_highlights():
+    """
+    Upload a document and detect key information for highlighting.
+    Returns sections to highlight with categories and importance levels.
+    Request: multipart/form-data with 'file' field
+    Response: { success, highlights[], sections[], keywords[] }
+    """
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'error': 'No file uploaded.'})
+        
+        f = request.files['file']
+        filename = f.filename
+        ext = os.path.splitext(filename)[1].lower()
+        user_api_key = request.form.get('api_key', '').strip()
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+            f.save(tmp.name)
+            tmp.flush()
+            tmp_path = tmp.name
+
+        extracted_text = None
+
+        if ext == '.pdf' and PyPDF2:
+            with open(tmp_path, "rb") as pdf_f:
+                pdf = PyPDF2.PdfReader(pdf_f)
+                text = []
+                for page in pdf.pages:
+                    content = page.extract_text() or ""
+                    text.append(content)
+                extracted_text = "\n\n".join(text)
+        elif ext in ('.docx', '.doc') and docx:
+            d = docx.Document(tmp_path)
+            extracted_text = "\n".join([p.text for p in d.paragraphs])
+        elif ext == '.txt':
+            with open(tmp_path, encoding="utf-8") as txt_f:
+                extracted_text = txt_f.read()
+
+        os.unlink(tmp_path)
+        
+        if not extracted_text or len(extracted_text.strip()) < 50:
+            return jsonify({'success': False, 'error': 'Could not extract enough text from the document.'})
+
+        # Limit text length for API
+        extracted_text = extracted_text[:8000]
+
+        # Analyze document for highlights using Groq
+        client = get_groq_client(user_api_key if user_api_key else None)
+        
+        highlight_prompt = f"""Analyze this document and identify key information that should be highlighted.
+
+DOCUMENT CONTENT:
+---
+{extracted_text}
+---
+
+Provide your response in the following JSON format ONLY (no other text):
+{{
+    "highlights": [
+        {{
+            "text": "The exact text to highlight (keep it short, max 100 chars)",
+            "category": "definition|important|conclusion|statistic|quote|warning|example",
+            "importance": "high|medium|low",
+            "note": "Brief explanation of why this is important"
+        }}
+    ],
+    "sections": [
+        {{
+            "title": "Section name or heading",
+            "summary": "Brief summary of this section",
+            "importance": "high|medium|low"
+        }}
+    ],
+    "keywords": ["keyword1", "keyword2", "keyword3"],
+    "document_structure": {{
+        "has_introduction": true,
+        "has_conclusion": true,
+        "main_themes": ["theme1", "theme2"]
+    }}
+}}
+
+Rules:
+- Include 5-15 highlights maximum
+- Focus on definitions, key facts, conclusions, and important statements
+- Include 3-8 sections if the document has clear structure
+- Extract 5-10 important keywords
+- Output ONLY valid JSON, no explanations or markdown."""
+
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": "You are a document analysis expert specialized in identifying key information. Always respond with valid JSON only."},
+                {"role": "user", "content": highlight_prompt}
+            ],
+            temperature=0.3,
+            max_tokens=3000
+        )
+
+        result_text = response.choices[0].message.content.strip()
+        
+        # Try to parse JSON response
+        try:
+            # Clean up potential markdown code blocks
+            if result_text.startswith('```'):
+                result_text = re.sub(r'^```(?:json)?\n?', '', result_text)
+                result_text = re.sub(r'\n?```$', '', result_text)
+            
+            import json
+            result = json.loads(result_text)
+            
+            return jsonify({
+                'success': True,
+                'highlights': result.get('highlights', []),
+                'sections': result.get('sections', []),
+                'keywords': result.get('keywords', []),
+                'document_structure': result.get('document_structure', {}),
+                'original_text': extracted_text,
+                'filename': filename
+            })
+        except json.JSONDecodeError:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to analyze document structure. Please try again.'
+            })
+
+    except Exception as e:
+        print(f"[ERROR] Analyze highlights endpoint: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -593,14 +1491,12 @@ def health_check():
         "timestamp": "2024-01-30T12:00:00"
     }
     """
-    pdflatex_path = shutil.which('pdflatex')
-    
     return jsonify({
         'status': 'healthy',
-        'service': 'LaTeX AI Backend',
+        'service': 'Latexis Backend',
         'version': '1.0.0',
-        'pdflatex_available': pdflatex_path is not None,
-        'pdflatex_path': pdflatex_path,
+        'pdflatex_available': PDFLATEX_PATH is not None,
+        'pdflatex_path': PDFLATEX_PATH,
         'active_sessions': len(conversations),
         'timestamp': datetime.now().isoformat()
     })
@@ -610,7 +1506,7 @@ def health_check():
 def index():
     """Root endpoint - API information"""
     return jsonify({
-        'name': 'LaTeX AI Backend',
+        'name': 'Latexis Backend',
         'version': '1.0.0',
         'author': 'TIKA Imad',
         'description': 'Natural language to LaTeX conversion API',
@@ -661,11 +1557,13 @@ def handle_exception(e):
 if __name__ == '__main__':
     print("")
     print("=" * 60)
-    print("   LaTeX AI - Intelligent Backend Server")
+    print("   Latexis - Intelligent Backend Server")
     print("   By TIKA Imad - ENSA")
     print("=" * 60)
     print("")
-    print(f"   🔧 pdflatex available: {shutil.which('pdflatex') is not None}")
+    print(f"   🔧 pdflatex available: {PDFLATEX_PATH is not None}")
+    if PDFLATEX_PATH:
+        print(f"   📍 pdflatex path: {PDFLATEX_PATH}")
     print(f"   🌐 Server starting on: http://localhost:5000")
     print(f"   📚 API documentation: http://localhost:5000/")
     print(f"   ❤️  Health check: http://localhost:5000/health")

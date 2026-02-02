@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LaTeX AI</title>
+    <title>Latexis</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -27,9 +27,9 @@
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <div class="logo">
-                    <img src="LTX.png" alt="LaTeX AI" class="logo-img">
-                    <span>LaTeX AI</span>
+                <div class="logo" id="sidebarLogo" title="Go to Home" style="cursor: pointer;">
+                    <img src="LTX.png" alt="Latexis" class="logo-img">
+                    <span>Latexis</span>
                 </div>
                 <button class="close-sidebar" id="closeSidebar" title="Close sidebar">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -89,6 +89,31 @@
                 </div>
 
                 <div class="nav-section">
+                    <span class="nav-section-title">Tools</span>
+                    <button class="nav-item tool-item" id="summarizeToolBtn">
+                        <span class="nav-icon">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <path d="M14 2v6h6"/>
+                                <path d="M16 13H8"/>
+                                <path d="M16 17H8"/>
+                                <path d="M10 9H8"/>
+                            </svg>
+                        </span>
+                        <span>Summarize Doc</span>
+                    </button>
+                    <button class="nav-item tool-item" id="highlightToolBtn">
+                        <span class="nav-icon">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 20h9"/>
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                            </svg>
+                        </span>
+                        <span>Highlight & Notes</span>
+                    </button>
+                </div>
+
+                <div class="nav-section">
                     <span class="nav-section-title">Folders <span class="section-count" id="folderCount">0</span></span>
                     <div class="folders-list" id="foldersList"></div>
                 </div>
@@ -105,9 +130,37 @@
             </nav>
 
             <div class="sidebar-footer">
-                <button class="nav-item" id="aboutBtn">
+                <button class="nav-item" id="aboutBtn" title="About Latexis">
                     <span class="nav-icon">i</span>
                     <span>About</span>
+                </button>
+                <button class="nav-item" id="apiKeyBtn" title="Manage API Key">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+                        </svg>
+                    </span>
+                    <span>Key</span>
+                </button>
+                <!-- Pill-shaped Theme Toggle -->
+                <button id="themeToggle" class="theme-toggle-pill" title="Toggle theme" type="button">
+                    <span class="toggle-track">
+                        <span class="toggle-icon moon-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                                <circle cx="17" cy="5" r="1" fill="currentColor"/>
+                                <circle cx="19" cy="8" r="0.5" fill="currentColor"/>
+                                <circle cx="15" cy="3" r="0.7" fill="currentColor"/>
+                            </svg>
+                        </span>
+                        <span class="toggle-icon sun-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <circle cx="12" cy="12" r="5"/>
+                                <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                        <span class="toggle-knob"></span>
+                    </span>
                 </button>
             </div>
         </aside>
@@ -121,23 +174,14 @@
         </button>
 
         <main class="main-content">
-            <!-- Top navigation bar (theme toggle on the right) -->
-            <header class="top-nav" aria-label="Top navigation">
-                <div class="top-nav-spacer"></div>
-                <button id="themeToggle" class="theme-toggle-btn" title="Toggle theme" type="button">
-                    <svg id="themeIcon" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="5" fill="#ffe066" stroke="#ffe066"/>
-                        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="#ffe066"/>
-                    </svg>
-                </button>
-            </header>
 
             <!-- Welcome Screen -->
+            <div class="view-container">
             <div class="welcome-screen" id="welcomeScreen">
                 <div class="welcome-content">
                     <div class="welcome-logo">
-                        <img src="LTX.png" alt="LaTeX AI" class="welcome-logo-img">
-                        <p class="welcome-logo-title">LaTeX AI</p>
+                        <img src="LTX.png" alt="Latexis" class="welcome-logo-img">
+                        <p class="welcome-logo-title">Latexis</p>
                     </div>
                     <h1 class="welcome-title">
                         <span class="typing-text" id="typingText"></span>
@@ -169,7 +213,7 @@
                 </svg>
             </button>
         </div>
-                        <p class="input-disclaimer">LaTeX AI can make mistakes. Please double-check responses.</p>
+                        <p class="input-disclaimer">Latexis can make mistakes. Please double-check responses.</p>
                     </div>
                     
                     <div class="template-pills">
@@ -188,7 +232,7 @@
                             <path id="circlePath" d="M 100, 100 m -70, 0 a 70,70 0 1,1 140,0 a 70,70 0 1,1 -140,0"/>
                         </defs>
                         <text class="badge-text">
-                            <textPath href="#circlePath">LATEX AI • CREATE • INSPIRE • REPEAT • 2026 © • DREAM • </textPath>
+                            <textPath href="#circlePath">Latexis • CREATE • INSPIRE • REPEAT • 2026 © • DREAM • </textPath>
                         </text>
                         <g class="badge-globe" transform="translate(100, 100)">
                             <circle cx="0" cy="0" r="22" fill="none" stroke="currentColor" stroke-width="1.2"/>
@@ -247,31 +291,415 @@
                 </div>
                 
                 <div class="chat-messages" id="chatMessages"></div>
-<div class="input-container">
-    <textarea id="chatPromptInput" placeholder="Ask for modifications..." rows="1"></textarea>
-    <button class="icon-btn-input" id="voiceBtnChat" title="Voice input">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-            <line x1="12" y1="19" x2="12" y2="23"/>
-            <line x1="8" y1="23" x2="16" y2="23"/>
-        </svg>
-    </button>
-    <button class="icon-btn-input" id="uploadBtnChat" title="Upload document">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-        </svg>
-    </button>
-    <button class="send-btn" id="chatSendBtn">
-        <!-- Arrow icon for Enter/Submit button (chat) -->
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="5" y1="12" x2="19" y2="12"/>
-            <polyline points="12 5 19 12 12 19"/>
-        </svg>
-    </button>
-</div>
+                
+                <div class="chat-input-area">
+                    <div class="input-container">
+                        <textarea id="chatPromptInput" placeholder="Ask for modifications..." rows="1"></textarea>
+                        <button class="icon-btn-input" id="voiceBtnChat" title="Voice input">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                                <line x1="12" y1="19" x2="12" y2="23"/>
+                                <line x1="8" y1="23" x2="16" y2="23"/>
+                            </svg>
+                        </button>
+                        <button class="icon-btn-input" id="uploadBtnChat" title="Upload document">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                            </svg>
+                        </button>
+                        <button class="send-btn" id="chatSendBtn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                                <polyline points="12 5 19 12 12 19"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
             </div>
 
+            <!-- Split-Pane PDF Preview Panel -->
+            <div class="pdf-preview-panel" id="pdfPreviewPanel">
+                <div class="pdf-preview-header">
+                    <h3 class="pdf-preview-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                        PDF Preview
+                    </h3>
+                    <div class="pdf-preview-actions">
+                        <button class="pdf-action-btn" id="downloadPdfBtn" title="Download PDF">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            <span>Download</span>
+                        </button>
+                        <button class="pdf-action-btn" id="printPdfBtn" title="Print PDF">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 6 2 18 2 18 9"/>
+                                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                                <rect x="6" y="14" width="12" height="8"/>
+                            </svg>
+                            <span>Print</span>
+                        </button>
+                        <button class="pdf-action-btn close" id="closePdfPreview" title="Close Preview">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 6L6 18M6 6l12 12"/>
+                            </svg>
+                            <span>Close</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="pdf-preview-content" id="pdfPreviewContent">
+                    <div class="pdf-loading">
+                        <div class="pdf-loading-spinner"></div>
+                        <p>Generating PDF preview...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================================================================
+                 DOCUMENT SUMMARIZATION SCREEN (Clean Design)
+                 ================================================================ -->
+            <div class="tool-screen" id="summarizeScreen">
+                <div class="tool-header-bar">
+                    <div class="tool-header-left">
+                        <button class="icon-btn" id="summarizeBackBtn" title="Back to Home">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 12H5M12 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                        <h2 class="tool-title">Summarize Document</h2>
+                    </div>
+                    <div class="tool-header-right">
+                        <button class="icon-btn" id="summarizeNewBtn" title="New Document">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="tool-content-wrapper">
+                    <div class="tool-main-area">
+                        <!-- Upload State -->
+                        <div class="upload-state" id="summarizeUploadState">
+                            <div class="upload-drop-zone" id="summarizeDropZone">
+                                <div class="upload-icon">
+                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                        <path d="M14 2v6h6"/>
+                                        <path d="M12 18v-6"/>
+                                        <path d="M9 15l3-3 3 3"/>
+                                    </svg>
+                                </div>
+                                <p class="upload-text">Drop a document here or <span class="upload-link">browse files</span></p>
+                                <span class="upload-hint">PDF, DOC, DOCX, TXT up to 10MB</span>
+                                <input type="file" id="summarizeFileInput" accept=".pdf,.doc,.docx,.txt" hidden>
+                            </div>
+                            
+                            <div class="length-selector">
+                                <span class="length-label">Summary length:</span>
+                                <div class="length-pills">
+                                    <button class="length-pill" data-length="short">Short</button>
+                                    <button class="length-pill active" data-length="medium">Medium</button>
+                                    <button class="length-pill" data-length="long">Detailed</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Loading State -->
+                        <div class="loading-state hidden" id="summarizeLoadingState">
+                            <div class="loader-spinner"></div>
+                            <p>Generating summary...</p>
+                        </div>
+
+                        <!-- Results State -->
+                        <div class="results-state hidden" id="summarizeResultsState">
+                            <div class="result-header">
+                                <div class="result-file-info">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                        <path d="M14 2v6h6"/>
+                                    </svg>
+                                    <span id="summaryFileName">document.pdf</span>
+                                    <span class="result-badge" id="summaryLengthBadge">Medium</span>
+                                </div>
+                                <button class="btn-icon-text" id="summarizeCopyBtn">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                    </svg>
+                                    Copy
+                                </button>
+                            </div>
+
+                            <div class="result-card">
+                                <h3>Summary</h3>
+                                <div class="summary-text" id="summaryText"></div>
+                            </div>
+
+                            <div class="result-grid">
+                                <div class="result-card">
+                                    <h3>Key Points</h3>
+                                    <ul class="key-points-list" id="keyPointsList"></ul>
+                                </div>
+                                <div class="result-card">
+                                    <h3>Topics</h3>
+                                    <div class="topics-list" id="topicsList"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================================================================
+                 HIGHLIGHT & NOTES SCREEN (Clean Design)
+                 ================================================================ -->
+            <div class="tool-screen" id="highlightScreen">
+                <!-- Header -->
+                <div class="hl-header">
+                    <div class="hl-header-left">
+                        <button class="icon-btn" id="highlightBackBtn" title="Back to Home">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 12H5M12 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                        <div class="hl-doc-info">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <path d="M14 2v6h6"/>
+                            </svg>
+                            <span id="hlDocInfo">No document loaded</span>
+                        </div>
+                    </div>
+                    <div class="hl-header-actions">
+                        <button class="hl-action-btn" id="highlightNewBtn" title="New Document">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                            <span>New</span>
+                        </button>
+                        <button class="hl-action-btn" id="highlightExportBtn" title="Export">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            <span>Export</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Main Content Area -->
+                <div class="hl-content">
+                    <!-- Upload State -->
+                    <div class="hl-upload-state" id="highlightUploadState">
+                        <div class="hl-upload-card" id="highlightDropZone">
+                            <div class="hl-upload-icon">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M12 20h9"/>
+                                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                </svg>
+                            </div>
+                            <h3>Upload a Document</h3>
+                            <p>Drag & drop or <span class="hl-browse-link">browse files</span></p>
+                            <span class="hl-upload-formats">PDF, DOC, DOCX, TXT • Max 10MB</span>
+                            <input type="file" id="highlightFileInput" accept=".pdf,.doc,.docx,.txt" hidden>
+                        </div>
+                        <div class="hl-features-preview">
+                            <div class="hl-feature-item">
+                                <div class="hl-feature-icon" style="background: rgba(254, 240, 138, 0.3)">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="2">
+                                        <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                    </svg>
+                                </div>
+                                <span>AI-Powered Highlights</span>
+                            </div>
+                            <div class="hl-feature-item">
+                                <div class="hl-feature-icon" style="background: rgba(134, 239, 172, 0.3)">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                    </svg>
+                                </div>
+                                <span>Organize Notes & Tags</span>
+                            </div>
+                            <div class="hl-feature-item">
+                                <div class="hl-feature-icon" style="background: rgba(147, 197, 253, 0.3)">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                                        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+                                    </svg>
+                                </div>
+                                <span>Extract Key Terms</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div class="hl-loading-state hidden" id="highlightLoadingState">
+                        <div class="hl-loader">
+                            <div class="hl-loader-ring"></div>
+                            <div class="hl-loader-ring"></div>
+                            <div class="hl-loader-ring"></div>
+                        </div>
+                        <p>Analyzing your document...</p>
+                        <span>Extracting key insights and highlights</span>
+                    </div>
+
+                    <!-- Results State - Workspace -->
+                    <div class="hl-workspace hidden" id="highlightWorkspace">
+                        <!-- Document Reader Panel -->
+                        <div class="hl-reader-panel">
+                            <div class="hl-reader-toolbar">
+                                <div class="hl-color-palette">
+                                    <span class="hl-palette-label">Highlight:</span>
+                                    <button class="hl-color-btn active" data-color="yellow" title="Yellow">
+                                        <span style="background: #fef08a"></span>
+                                    </button>
+                                    <button class="hl-color-btn" data-color="green" title="Green">
+                                        <span style="background: #86efac"></span>
+                                    </button>
+                                    <button class="hl-color-btn" data-color="blue" title="Blue">
+                                        <span style="background: #93c5fd"></span>
+                                    </button>
+                                    <button class="hl-color-btn" data-color="pink" title="Pink">
+                                        <span style="background: #f9a8d4"></span>
+                                    </button>
+                                </div>
+                                <div class="hl-toolbar-actions">
+                                    <button class="hl-tool-btn" id="hlClearBtn" title="Clear my highlights">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="hl-reader-content" id="hlReaderContent">
+                                <!-- Document text will be rendered here -->
+                            </div>
+                            <div class="hl-reader-footer">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
+                                </svg>
+                                Select text to highlight or add notes
+                            </div>
+                        </div>
+
+                        <!-- Notes & Insights Panel -->
+                        <div class="hl-notes-panel">
+                            <!-- Panel Header with Tabs -->
+                            <div class="hl-panel-tabs">
+                                <button class="hl-tab active" data-tab="insights">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                    </svg>
+                                    AI Insights
+                                    <span class="hl-tab-count" id="insightsCount">0</span>
+                                </button>
+                                <button class="hl-tab" data-tab="notes">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                    </svg>
+                                    My Notes
+                                    <span class="hl-tab-count" id="notesCount">0</span>
+                                </button>
+                                <button class="hl-tab" data-tab="keywords">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/>
+                                        <line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>
+                                    </svg>
+                                    Keywords
+                                </button>
+                            </div>
+
+                            <!-- AI Insights Tab -->
+                            <div class="hl-tab-content active" data-panel="insights">
+                                <div class="hl-insights-filter">
+                                    <button class="hl-filter-btn active" data-filter="all">All</button>
+                                    <button class="hl-filter-btn" data-filter="key-point">Key Points</button>
+                                    <button class="hl-filter-btn" data-filter="definition">Definitions</button>
+                                    <button class="hl-filter-btn" data-filter="important">Important</button>
+                                </div>
+                                <div class="hl-insights-list" id="hlInsightsList">
+                                    <!-- AI insights will be rendered here -->
+                                </div>
+                            </div>
+
+                            <!-- My Notes Tab -->
+                            <div class="hl-tab-content" data-panel="notes">
+                                <div class="hl-note-composer">
+                                    <textarea id="hlNoteTextarea" placeholder="Write a note..." rows="3"></textarea>
+                                    <div class="hl-note-composer-footer">
+                                        <div class="hl-tag-selector">
+                                            <button class="hl-tag-btn active" data-tag="general">General</button>
+                                            <button class="hl-tag-btn" data-tag="important">Important</button>
+                                            <button class="hl-tag-btn" data-tag="question">Question</button>
+                                            <button class="hl-tag-btn" data-tag="idea">Idea</button>
+                                        </div>
+                                        <button class="hl-add-note-btn" id="hlAddNoteBtn">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M12 5v14M5 12h14"/>
+                                            </svg>
+                                            Add Note
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="hl-notes-filter">
+                                    <button class="hl-notes-filter-btn active" data-filter="all">All Notes</button>
+                                    <button class="hl-notes-filter-btn" data-filter="important">Important</button>
+                                    <button class="hl-notes-filter-btn" data-filter="question">Questions</button>
+                                    <button class="hl-notes-filter-btn" data-filter="idea">Ideas</button>
+                                </div>
+                                <div class="hl-notes-list" id="hlNotesList">
+                                    <!-- User notes will be rendered here -->
+                                </div>
+                            </div>
+
+                            <!-- Keywords Tab -->
+                            <div class="hl-tab-content" data-panel="keywords">
+                                <div class="hl-keywords-header">
+                                    <p>Click a keyword to find it in the document</p>
+                                </div>
+                                <div class="hl-keywords-cloud" id="hlKeywordsCloud">
+                                    <!-- Keywords will be rendered here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Context Menu for Text Selection -->
+                <div class="hl-context-menu hidden" id="highlightContextMenu">
+                    <button class="hl-ctx-btn" id="ctxHighlightBtn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                        </svg>
+                        Highlight
+                    </button>
+                    <button class="hl-ctx-btn" id="ctxAddNoteBtn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                        Add Note
+                    </button>
+                    <button class="hl-ctx-btn" id="ctxCopyBtn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        Copy
+                    </button>
+                </div>
+            </div>
+
+            </div><!-- /.view-container -->
         </main>
     </div>
 
@@ -285,13 +713,13 @@
             </button>
             <div class="modal-content">
                 <div class="modal-logo">
-                    <img src="LTX.png" alt="LaTeX AI" class="modal-logo-img">
+                    <img src="LTX.png" alt="Latexis" class="modal-logo-img">
                 </div>
-                <h2 class="modal-title">LaTeX AI</h2>
+                <h2 class="modal-title">Latexis</h2>
                 <p class="modal-version">v1.0.0</p>
                 <div class="modal-section">
                     <h3>About</h3>
-                    <p>LaTeX AI transforms natural language into professional LaTeX documents. Powered by AI, it creates CVs, thesis covers, letters, reports, and presentations instantly.</p>
+                    <p>Latexis transforms natural language into professional LaTeX documents. Powered by AI, it creates CVs, thesis covers, letters, reports, and presentations instantly.</p>
                 </div>
                 <div class="modal-section">
                     <h3>Features</h3>
@@ -301,6 +729,10 @@
                         <li>Folder organization</li>
                         <li>Chat history with search</li>
                         <li>Direct Overleaf export</li>
+                        <li>Document Summarization</li>
+                        <li>Text Highlighting and Notes</li>
+                        <li>Document History and Notes Tracking</li>
+                        <li>Customizable Summary Length (Short, Medium, Long)</li>
                     </ul>
                 </div>
                 <div class="modal-section">
@@ -322,6 +754,44 @@
                         <p class="creator-school">National School of Applied Sciences</p>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Key Modal -->
+    <div class="modal-overlay" id="apiKeyModal">
+        <div class="modal modal-sm">
+            <button class="modal-close" id="closeApiKeyModal">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+            </button>
+            <div class="modal-content">
+                <div class="api-key-icon">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5">
+                        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+                    </svg>
+                </div>
+                <h3 class="modal-title-sm">API Key Required</h3>
+                <p class="api-key-message" id="apiKeyMessage">You've reached the free usage limit. Add your own Groq API key to continue using Latexis.</p>
+                <div class="api-key-info">
+                    <p>Get a free API key from <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com</a></p>
+                </div>
+                <div class="form-group">
+                    <label for="apiKeyInput">Groq API Key</label>
+                    <input type="password" id="apiKeyInput" placeholder="gsk_xxxxxxxxxxxx..." class="form-input">
+                </div>
+                <div class="api-key-status" id="apiKeyStatus"></div>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" id="cancelApiKey">Cancel</button>
+                    <button class="btn btn-primary" id="saveApiKey">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Save Key
+                    </button>
+                </div>
+                <p class="api-key-note">Your API key is stored locally in your browser and never sent to our servers.</p>
             </div>
         </div>
     </div>
@@ -423,7 +893,7 @@
         </button>
         <div class="modal-content">
             <h3 class="modal-title-sm">Upload Document</h3>
-            <p class="upload-description">Upload a PDF or Word file to extract text and convert to LaTeX</p>
+            <p class="upload-description">Upload a document to automatically convert it into editable LaTeX code</p>
             <div class="upload-area" id="uploadArea">
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -443,6 +913,7 @@
         </div>
     </div>
 </div>
+
 <!-- Preview Modal -->
 <div class="modal-overlay" id="previewModal">
     <div class="modal modal-lg">
@@ -468,6 +939,25 @@
         </div>
     </div>
 </div>
+
+<!-- Note Context Menu (appears on text selection) -->
+<div class="note-context-menu hidden" id="noteContextMenu">
+    <button class="context-btn" id="contextHighlightBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 20h9"/>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        </svg>
+        Highlight
+    </button>
+    <button class="context-btn" id="contextAddNoteBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        Add Note
+    </button>
+</div>
+
     <script src="app.js"></script>
 </body>
 </html>
