@@ -1049,45 +1049,85 @@ def preview_latex_pdf():
                 try: shutil.rmtree(temp_dir, ignore_errors=True)
                 except: pass
         else:
-            # Use online LaTeX compiler (latex.ytotech.com)
+            # Use online LaTeX compiler
             try:
                 print("[INFO] Using online LaTeX compiler...")
                 
-                api_url = "https://latex.ytotech.com/builds/sync"
+                # Use latexonline.cc API (more reliable)
+                import urllib.parse
+                import base64
                 
-                payload = {
-                    "compiler": "pdflatex",
-                    "resources": [
-                        {
-                            "main": True,
-                            "content": latex_code_clean
-                        }
-                    ]
-                }
-                
-                response = requests.post(
-                    api_url,
-                    json=payload,
-                    headers={'Content-Type': 'application/json'},
-                    timeout=120
-                )
-                
-                if response.status_code == 200 and response.headers.get('Content-Type', '').startswith('application/pdf'):
-                    return Response(
-                        response.content,
-                        mimetype='application/pdf',
-                        headers={'Content-Disposition': f'inline; filename="{filename}.pdf"'}
-                    )
-                else:
-                    try:
-                        error_data = response.json()
-                        error_msg = error_data.get('logs', error_data.get('error', 'Compilation failed'))
-                        if isinstance(error_msg, list):
-                            error_msg = '\n'.join(str(e) for e in error_msg[-5:])
-                    except:
-                        error_msg = f"Online compilation failed (status {response.status_code}). Try 'Open in Overleaf' instead."
+                # Method 1: Try latex.ytotech.com first
+                try:
+                    api_url = "https://latex.ytotech.com/builds/sync"
                     
-                    return jsonify({'success': False, 'error': error_msg}), 500
+                    payload = {
+                        "compiler": "pdflatex",
+                        "resources": [
+                            {
+                                "main": True,
+                                "content": latex_code_clean
+                            }
+                        ]
+                    }
+                    
+                    response = requests.post(
+                        api_url,
+                        json=payload,
+                        headers={'Content-Type': 'application/json'},
+                        timeout=60
+                    )
+                    
+                    if response.status_code == 200:
+                        content_type = response.headers.get('Content-Type', '')
+                        if 'pdf' in content_type or response.content[:4] == b'%PDF':
+                            return Response(
+                                response.content,
+                                mimetype='application/pdf',
+                                headers={'Content-Disposition': f'inline; filename="{filename}.pdf"'}
+                            )
+                except Exception as e1:
+                    print(f"[WARN] latex.ytotech.com failed: {e1}")
+                
+                # Method 2: Fallback to texlive.net/run API
+                try:
+                    api_url = "https://texlive.net/cgi-bin/latexcgi"
+                    
+                    # Prepare the form data
+                    form_data = {
+                        'filecontents[]': latex_code_clean,
+                        'filename[]': 'document.tex',
+                        'engine': 'pdflatex',
+                        'return': 'pdf'
+                    }
+                    
+                    response = requests.post(
+                        api_url,
+                        data=form_data,
+                        timeout=90
+                    )
+                    
+                    if response.status_code == 200:
+                        content_type = response.headers.get('Content-Type', '')
+                        if 'pdf' in content_type or response.content[:4] == b'%PDF':
+                            return Response(
+                                response.content,
+                                mimetype='application/pdf',
+                                headers={'Content-Disposition': f'inline; filename="{filename}.pdf"'}
+                            )
+                except Exception as e2:
+                    print(f"[WARN] texlive.net failed: {e2}")
+                
+                # If both fail, return helpful error
+                return jsonify({
+                    'success': False, 
+                    'error': 'Online PDF compilation is temporarily unavailable. Please use "Open in Overleaf" to compile your document.'
+                }), 500
+                    
+            except requests.Timeout:
+                return jsonify({'success': False, 'error': 'Online compilation timed out. Try "Open in Overleaf" for complex documents.'}), 500
+            except Exception as e:
+                return jsonify({'success': False, 'error': f'Preview unavailable. Please use "Open in Overleaf" to view your PDF.'}), 500
                     
             except requests.Timeout:
                 return jsonify({'success': False, 'error': 'Online compilation timed out. Try "Open in Overleaf" for complex documents.'}), 500
