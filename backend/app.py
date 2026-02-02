@@ -1505,9 +1505,9 @@ def health_check():
     })
 
 
-@app.route('/', methods=['GET'])
-def index():
-    """Root endpoint - API information"""
+@app.route('/api', methods=['GET'])
+def api_info():
+    """API information endpoint"""
     return jsonify({
         'name': 'Latexis Backend',
         'version': '1.0.0',
