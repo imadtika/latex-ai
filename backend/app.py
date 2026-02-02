@@ -11,7 +11,7 @@ Features:
 - Multiple document types support
 """
 from datetime import datetime
-from flask import Flask, request, jsonify, send_file, send_from_directory
+from flask import Flask, request, jsonify, send_file, send_from_directory, Response
 from flask_cors import CORS
 from groq import Groq
 import os
@@ -20,6 +20,7 @@ import subprocess
 import tempfile
 import shutil
 import glob
+import requests
 
 
 # ============================================================================
@@ -922,6 +923,7 @@ IMPORTANT:
 def preview_latex_pdf():
     """
     Compile LaTeX code to PDF and stream it for inline preview.
+    Uses local pdflatex if available, otherwise uses online LaTeX compiler.
     Request: { latex_code: "...", filename: "..." }
     """
     try:
@@ -931,9 +933,6 @@ def preview_latex_pdf():
 
         if not latex_code:
             return jsonify({'success': False, 'error': 'No LaTeX code provided'}), 400
-
-        if not PDFLATEX_PATH:
-            return jsonify({'success': False, 'error': 'pdflatex is not installed on the server.'}), 500
 
         # Pre-process: Replace external image references with placeholders
         # This prevents errors from missing image files
@@ -1016,41 +1015,88 @@ def preview_latex_pdf():
         for char, replacement in unicode_replacements.items():
             latex_code_clean = latex_code_clean.replace(char, replacement)
 
-        temp_dir = tempfile.mkdtemp()
-        tex_path = os.path.join(temp_dir, f"{filename}.tex")
-        pdf_path = os.path.join(temp_dir, f"{filename}.pdf")
-        try:
-            with open(tex_path, 'w', encoding='utf-8') as f:
-                f.write(latex_code_clean)  # Use cleaned code without external images
-            # Run pdflatex twice pour un PDF correct
-            result = None
-            for i in range(2):
-                result = subprocess.run(
-                    [PDFLATEX_PATH,'-interaction=nonstopmode','-halt-on-error','-output-directory', temp_dir,tex_path],
-                    capture_output=True, text=True, timeout=60, cwd=temp_dir
+        # Try local pdflatex first if available
+        if PDFLATEX_PATH:
+            temp_dir = tempfile.mkdtemp()
+            tex_path = os.path.join(temp_dir, f"{filename}.tex")
+            pdf_path = os.path.join(temp_dir, f"{filename}.pdf")
+            try:
+                with open(tex_path, 'w', encoding='utf-8') as f:
+                    f.write(latex_code_clean)
+                # Run pdflatex twice for correct PDF
+                result = None
+                for i in range(2):
+                    result = subprocess.run(
+                        [PDFLATEX_PATH,'-interaction=nonstopmode','-halt-on-error','-output-directory', temp_dir,tex_path],
+                        capture_output=True, text=True, timeout=60, cwd=temp_dir
+                    )
+                if os.path.exists(pdf_path):
+                    return send_file(pdf_path, mimetype='application/pdf')
+                else:
+                    error_msg = 'Failed to compile PDF locally.'
+                    if result:
+                        stdout = result.stdout or ''
+                        stderr = result.stderr or ''
+                        log_output = stdout + '\n' + stderr
+                        error_lines = []
+                        for line in log_output.split('\n'):
+                            if any(x in line.lower() for x in ['error', '!', 'undefined', 'missing']):
+                                error_lines.append(line.strip())
+                        if error_lines:
+                            error_msg = '; '.join(error_lines[-5:])
+                    return jsonify({'success': False, 'error': error_msg}), 500
+            finally:
+                try: shutil.rmtree(temp_dir, ignore_errors=True)
+                except: pass
+        else:
+            # Use online LaTeX compiler (latex.ytotech.com)
+            try:
+                print("[INFO] Using online LaTeX compiler...")
+                
+                api_url = "https://latex.ytotech.com/builds/sync"
+                
+                payload = {
+                    "compiler": "pdflatex",
+                    "resources": [
+                        {
+                            "main": True,
+                            "content": latex_code_clean
+                        }
+                    ]
+                }
+                
+                response = requests.post(
+                    api_url,
+                    json=payload,
+                    headers={'Content-Type': 'application/json'},
+                    timeout=120
                 )
-            if os.path.exists(pdf_path):
-                return send_file(pdf_path, mimetype='application/pdf')
-            else:
-                # Extract error details from log
-                error_msg = 'Failed to compile PDF.'
-                if result:
-                    stdout = result.stdout or ''
-                    stderr = result.stderr or ''
-                    log_output = stdout + '\n' + stderr
-                    # Find error lines
-                    error_lines = []
-                    for line in log_output.split('\n'):
-                        if any(x in line.lower() for x in ['error', '!', 'undefined', 'missing']):
-                            error_lines.append(line.strip())
-                    if error_lines:
-                        error_msg = '; '.join(error_lines[-5:])  # Last 5 error lines
-                return jsonify({'success': False, 'error': error_msg}), 500
-        finally:
-            try: shutil.rmtree(temp_dir, ignore_errors=True)
-            except: pass
+                
+                if response.status_code == 200 and response.headers.get('Content-Type', '').startswith('application/pdf'):
+                    return Response(
+                        response.content,
+                        mimetype='application/pdf',
+                        headers={'Content-Disposition': f'inline; filename="{filename}.pdf"'}
+                    )
+                else:
+                    try:
+                        error_data = response.json()
+                        error_msg = error_data.get('logs', error_data.get('error', 'Compilation failed'))
+                        if isinstance(error_msg, list):
+                            error_msg = '\n'.join(str(e) for e in error_msg[-5:])
+                    except:
+                        error_msg = f"Online compilation failed (status {response.status_code}). Try 'Open in Overleaf' instead."
+                    
+                    return jsonify({'success': False, 'error': error_msg}), 500
+                    
+            except requests.Timeout:
+                return jsonify({'success': False, 'error': 'Online compilation timed out. Try "Open in Overleaf" for complex documents.'}), 500
+            except requests.RequestException as e:
+                return jsonify({'success': False, 'error': f'Online compiler unavailable. Try "Open in Overleaf".'}), 500
+                
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500 
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/validate', methods=['POST'])
 def validate_latex():
     """
