@@ -88,11 +88,21 @@ rate_limits = defaultdict(list)  # IP -> list of timestamps
 MAX_REQUESTS_PER_HOUR = 5  # Limit for users using the default API key
 MAX_REQUESTS_CUSTOM_KEY = 100  # Higher limit for users with their own key
 
+# Check if running on localhost (disable rate limiting for local development)
+def is_localhost():
+    """Check if running in local development mode"""
+    return os.environ.get('RAILWAY_ENVIRONMENT') is None and os.environ.get('PORT') is None
+
 def check_rate_limit(ip_address, using_custom_key=False):
     """
     Check if the user has exceeded rate limits.
     Returns (is_allowed, remaining_requests, reset_time_seconds)
+    Disabled for localhost development.
     """
+    # Disable rate limiting for localhost
+    if is_localhost():
+        return True, 999, 0
+    
     max_requests = MAX_REQUESTS_CUSTOM_KEY if using_custom_key else MAX_REQUESTS_PER_HOUR
     current_time = time.time()
     hour_ago = current_time - 3600
