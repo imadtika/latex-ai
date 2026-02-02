@@ -93,36 +93,49 @@ def is_localhost():
     """Check if running in local development mode"""
     return os.environ.get('RAILWAY_ENVIRONMENT') is None and os.environ.get('PORT') is None
 
-def check_rate_limit(ip_address, using_custom_key=False):
+def check_rate_limit(ip_address, using_custom_key=False, custom_key_hash=None):
     """
     Check if the user has exceeded rate limits.
     Returns (is_allowed, remaining_requests, reset_time_seconds)
     Disabled for localhost development.
+    
+    Users with custom keys get a separate rate limit bucket.
     """
     # Disable rate limiting for localhost
     if is_localhost():
         return True, 999, 0
     
-    max_requests = MAX_REQUESTS_CUSTOM_KEY if using_custom_key else MAX_REQUESTS_PER_HOUR
+    # Use different bucket for custom key users (IP + key hash)
+    if using_custom_key and custom_key_hash:
+        bucket_key = f"{ip_address}:custom:{custom_key_hash[:8]}"
+        max_requests = MAX_REQUESTS_CUSTOM_KEY
+    else:
+        bucket_key = f"{ip_address}:default"
+        max_requests = MAX_REQUESTS_PER_HOUR
+    
     current_time = time.time()
     hour_ago = current_time - 3600
     
     # Clean old timestamps
-    rate_limits[ip_address] = [ts for ts in rate_limits[ip_address] if ts > hour_ago]
+    rate_limits[bucket_key] = [ts for ts in rate_limits[bucket_key] if ts > hour_ago]
     
-    remaining = max_requests - len(rate_limits[ip_address])
+    remaining = max_requests - len(rate_limits[bucket_key])
     
     if remaining <= 0:
         # Calculate reset time
-        oldest_request = min(rate_limits[ip_address])
+        oldest_request = min(rate_limits[bucket_key])
         reset_time = int(oldest_request + 3600 - current_time)
         return False, 0, reset_time
     
     return True, remaining, 0
 
-def record_request(ip_address):
+def record_request(ip_address, using_custom_key=False, custom_key_hash=None):
     """Record a request timestamp for rate limiting"""
-    rate_limits[ip_address].append(time.time())
+    if using_custom_key and custom_key_hash:
+        bucket_key = f"{ip_address}:custom:{custom_key_hash[:8]}"
+    else:
+        bucket_key = f"{ip_address}:default"
+    rate_limits[bucket_key].append(time.time())
 
 def get_groq_client(api_key=None):
     """Get a Groq client with the specified or default API key"""
@@ -476,7 +489,7 @@ def get_status():
     Get API status and rate limit info for the current user
     """
     ip_address = request.remote_addr or 'unknown'
-    is_allowed, remaining, reset_time = check_rate_limit(ip_address, using_custom_key=False)
+    is_allowed, remaining, reset_time = check_rate_limit(ip_address, using_custom_key=False, custom_key_hash=None)
     
     return jsonify({
         'success': True,
@@ -566,17 +579,26 @@ def generate_latex():
         # Get client IP for rate limiting
         ip_address = request.remote_addr or 'unknown'
         using_custom_key = bool(user_api_key)
+        custom_key_hash = hash(user_api_key) if user_api_key else None
         
-        # Check rate limits (only strict for default key users)
-        is_allowed, remaining, reset_time = check_rate_limit(ip_address, using_custom_key)
+        # Check rate limits (separate buckets for default vs custom key users)
+        is_allowed, remaining, reset_time = check_rate_limit(ip_address, using_custom_key, str(custom_key_hash) if custom_key_hash else None)
         
-        if not is_allowed and not using_custom_key:
-            return jsonify({
-                'success': False,
-                'error': f'Rate limit exceeded. You have used your {MAX_REQUESTS_PER_HOUR} free requests this hour. Please add your own Groq API key to continue, or wait {reset_time // 60} minutes.',
-                'rate_limited': True,
-                'reset_in_seconds': reset_time
-            })
+        if not is_allowed:
+            if using_custom_key:
+                return jsonify({
+                    'success': False,
+                    'error': f'Rate limit exceeded for your API key. You have used your {MAX_REQUESTS_CUSTOM_KEY} requests this hour. Please wait {reset_time // 60} minutes.',
+                    'rate_limited': True,
+                    'reset_in_seconds': reset_time
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': f'Rate limit exceeded. You have used your {MAX_REQUESTS_PER_HOUR} free requests this hour. Please add your own Groq API key to continue, or wait {reset_time // 60} minutes.',
+                    'rate_limited': True,
+                    'reset_in_seconds': reset_time
+                })
         
         # Initialize conversation history for this session
         if session_id not in conversations:
@@ -610,9 +632,8 @@ def generate_latex():
             top_p=0.9,
         )
         
-        # Record the request for rate limiting (only for default key users)
-        if not using_custom_key:
-            record_request(ip_address)
+        # Record the request for rate limiting
+        record_request(ip_address, using_custom_key, str(custom_key_hash) if custom_key_hash else None)
         
         # Extract and clean LaTeX code
         raw_response = response.choices[0].message.content
@@ -862,11 +883,12 @@ def improve_document():
         # Get client IP for rate limiting
         ip_address = request.remote_addr or 'unknown'
         using_custom_key = bool(user_api_key)
+        custom_key_hash = hash(user_api_key) if user_api_key else None
         
-        # Check rate limits (only strict for default key users)
-        is_allowed, remaining, reset_time = check_rate_limit(ip_address, using_custom_key)
+        # Check rate limits (separate buckets for default vs custom key users)
+        is_allowed, remaining, reset_time = check_rate_limit(ip_address, using_custom_key, str(custom_key_hash) if custom_key_hash else None)
         
-        if not is_allowed and not using_custom_key:
+        if not is_allowed:
             return jsonify({
                 'success': False,
                 'error': f'Rate limit exceeded. Please add your own Groq API key to continue, or wait {reset_time // 60} minutes.',

@@ -1330,7 +1330,8 @@ async function generateLatex(prompt) {
             );
         } else if (data.rate_limited) {
             // Show API key prompt when rate limited
-            showApiKeyModal(data.error);
+            showApiKeyModal(data.error, true);
+            addErrorMessage('Rate limit reached. Please add your API key to continue.');
         } else {
             addErrorMessage('Error: ' + data.error);
         }
@@ -1697,29 +1698,39 @@ function closeModal(id) {
 // API Key Modal Functions
 // ============================================================================
 
-function showApiKeyModal(message = null) {
+function showApiKeyModal(message = null, isRateLimited = false) {
     const messageEl = document.getElementById('apiKeyMessage');
     const inputEl = document.getElementById('apiKeyInput');
     const statusEl = document.getElementById('apiKeyStatus');
+    const modal = document.getElementById('apiKeyModal');
     
     if (message) {
-        messageEl.textContent = message;
+        messageEl.innerHTML = isRateLimited 
+            ? `<span style="color: var(--error); font-weight: 600;">⚠️ ${message}</span><br><br>Add your own Groq API key below to continue using Latexis with 100 requests/hour.`
+            : message;
     } else {
-        messageEl.textContent = "Add your own Groq API key to get unlimited access to Latexis.";
+        messageEl.textContent = "Add your own Groq API key to get 100 requests/hour instead of 5.";
     }
     
     // Pre-fill with existing key if available
     const existingKey = getUserApiKey();
     if (existingKey) {
         inputEl.value = existingKey;
+        // If rate limited but has key, show helpful message
+        if (isRateLimited) {
+            statusEl.textContent = 'Your current key may be invalid or expired. Try a new key.';
+            statusEl.className = 'api-key-status error';
+        }
     } else {
         inputEl.value = '';
+        statusEl.textContent = '';
+        statusEl.className = 'api-key-status';
     }
     
-    statusEl.textContent = '';
-    statusEl.className = 'api-key-status';
-    
     openModal('apiKeyModal');
+    
+    // Focus the input after modal opens
+    setTimeout(() => inputEl.focus(), 100);
 }
 
 function setupApiKeyModal() {
