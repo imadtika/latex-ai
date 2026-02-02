@@ -1978,6 +1978,10 @@ window.previewPDF = async function previewPDF() {
 
 // Show PDF error in the preview panel
 function showPdfError(message) {
+    const overleafUrl = state.currentLatexCode ? 
+        `https://www.overleaf.com/docs?snip_uri=data:application/x-tex;base64,${btoa(unescape(encodeURIComponent(state.currentLatexCode)))}` : 
+        'https://www.overleaf.com/docs';
+    
     el.pdfPreviewContent.innerHTML = `
         <div class="pdf-error">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1987,7 +1991,14 @@ function showPdfError(message) {
             </svg>
             <h4>PDF Preview Error</h4>
             <p>${escapeHtml(message)}</p>
-            <a href="https://www.overleaf.com/docs" target="_blank">Try compiling on Overleaf</a>
+            <a href="${overleafUrl}" target="_blank" class="overleaf-link-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                    <polyline points="15 3 21 3 21 9"/>
+                    <line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+                Open in Overleaf (Recommended)
+            </a>
         </div>
     `;
 }

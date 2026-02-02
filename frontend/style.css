@@ -2501,6 +2501,31 @@ body { font-family: var(--font-main); background-color: var(--bg-primary); color
   color: var(--accent-dim);
 }
 
+.pdf-error .overleaf-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 10px 20px;
+  background: var(--accent);
+  color: var(--bg-primary);
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.pdf-error .overleaf-link-btn:hover {
+  background: var(--accent-dim);
+  transform: translateY(-1px);
+}
+
+.pdf-error .overleaf-link-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke: var(--bg-primary);
+}
+
 /* Responsive: Stack on smaller screens */
 @media (max-width: 900px) {
   .view-container.split-view {
