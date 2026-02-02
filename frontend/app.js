@@ -4,7 +4,10 @@
  * National School of Applied Sciences
  */
 
-const API_URL = '';
+// Auto-detect: use localhost for local dev, empty for production
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+    ? 'http://localhost:5000' 
+    : '';
 
 // ============================================================================
 // State Management
