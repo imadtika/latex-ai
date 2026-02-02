@@ -11,7 +11,7 @@ Features:
 - Multiple document types support
 """
 from datetime import datetime
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, send_from_directory
 from flask_cors import CORS
 from groq import Groq
 import os
@@ -26,7 +26,10 @@ import glob
 # Flask App Initialization
 # ============================================================================
 
-app = Flask(__name__)
+# Get the frontend folder path (one level up from backend)
+FRONTEND_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend')
+
+app = Flask(__name__, static_folder=FRONTEND_FOLDER, static_url_path='')
 CORS(app)
 
 
@@ -1554,7 +1557,21 @@ def handle_exception(e):
 # Main Entry Point
 # ============================================================================
 
+# Serve frontend index.html at root
+@app.route('/')
+def serve_frontend():
+    return send_from_directory(FRONTEND_FOLDER, 'index.html')
+
+# Serve other static files
+@app.route('/<path:path>')
+def serve_static(path):
+    # Don't intercept API routes
+    if path.startswith('api/') or path in ['generate', 'validate-key', 'preview', 'upload', 'summarize', 'analyze-highlights', 'health']:
+        return jsonify({'error': 'Not found'}), 404
+    return send_from_directory(FRONTEND_FOLDER, path)
+
 if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
     print("")
     print("=" * 60)
     print("   Latexis - Intelligent Backend Server")
@@ -1564,9 +1581,9 @@ if __name__ == '__main__':
     print(f"   🔧 pdflatex available: {PDFLATEX_PATH is not None}")
     if PDFLATEX_PATH:
         print(f"   📍 pdflatex path: {PDFLATEX_PATH}")
-    print(f"   🌐 Server starting on: http://localhost:5000")
-    print(f"   📚 API documentation: http://localhost:5000/")
-    print(f"   ❤️  Health check: http://localhost:5000/health")
+    print(f"   🌐 Server starting on: http://localhost:{port}")
+    print(f"   📚 API documentation: http://localhost:{port}/")
+    print(f"   ❤️  Health check: http://localhost:{port}/health")
     print("")
     print("=" * 60)
     print("   Ready to generate LaTeX documents!")
@@ -1574,8 +1591,8 @@ if __name__ == '__main__':
     print("")
     
     app.run(
-        debug=True,
+        debug=False,
         host='0.0.0.0',
-        port=5000,
+        port=port,
         threaded=True
     )

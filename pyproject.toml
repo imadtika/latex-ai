@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "latexis"
+version = "2.0.0"
+description = "AI-powered LaTeX document generator chatbot"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "flask==3.0.0",
+    "flask-cors==4.0.0",
+    "groq==0.4.2",
+    "gunicorn==21.2.0",
+    "python-docx==1.1.0",
+    "PyPDF2==3.0.1",
+]
