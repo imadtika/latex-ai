@@ -93,7 +93,7 @@ def is_localhost():
     """Check if running in local development mode"""
     return os.environ.get('RAILWAY_ENVIRONMENT') is None and os.environ.get('PORT') is None
 
-def check_rate_limit(ip_address, using_custom_key=False, custom_key_hash=None):
+def check_rate_limit(ip_address, using_custom_key=False, api_key=None):
     """
     Check if the user has exceeded rate limits.
     Returns (is_allowed, remaining_requests, reset_time_seconds)
@@ -105,9 +105,11 @@ def check_rate_limit(ip_address, using_custom_key=False, custom_key_hash=None):
     if is_localhost():
         return True, 999, 0
     
-    # Use different bucket for custom key users (IP + key hash)
-    if using_custom_key and custom_key_hash:
-        bucket_key = f"{ip_address}:custom:{custom_key_hash[:8]}"
+    # Use different bucket for custom key users (IP + key prefix)
+    if using_custom_key and api_key:
+        # Use first 10 chars of key as identifier
+        key_id = api_key[:10] if len(api_key) >= 10 else api_key
+        bucket_key = f"{ip_address}:custom:{key_id}"
         max_requests = MAX_REQUESTS_CUSTOM_KEY
     else:
         bucket_key = f"{ip_address}:default"
@@ -129,10 +131,11 @@ def check_rate_limit(ip_address, using_custom_key=False, custom_key_hash=None):
     
     return True, remaining, 0
 
-def record_request(ip_address, using_custom_key=False, custom_key_hash=None):
+def record_request(ip_address, using_custom_key=False, api_key=None):
     """Record a request timestamp for rate limiting"""
-    if using_custom_key and custom_key_hash:
-        bucket_key = f"{ip_address}:custom:{custom_key_hash[:8]}"
+    if using_custom_key and api_key:
+        key_id = api_key[:10] if len(api_key) >= 10 else api_key
+        bucket_key = f"{ip_address}:custom:{key_id}"
     else:
         bucket_key = f"{ip_address}:default"
     rate_limits[bucket_key].append(time.time())
@@ -489,7 +492,7 @@ def get_status():
     Get API status and rate limit info for the current user
     """
     ip_address = request.remote_addr or 'unknown'
-    is_allowed, remaining, reset_time = check_rate_limit(ip_address, using_custom_key=False, custom_key_hash=None)
+    is_allowed, remaining, reset_time = check_rate_limit(ip_address, using_custom_key=False, api_key=None)
     
     return jsonify({
         'success': True,
@@ -579,10 +582,9 @@ def generate_latex():
         # Get client IP for rate limiting
         ip_address = request.remote_addr or 'unknown'
         using_custom_key = bool(user_api_key)
-        custom_key_hash = hash(user_api_key) if user_api_key else None
         
         # Check rate limits (separate buckets for default vs custom key users)
-        is_allowed, remaining, reset_time = check_rate_limit(ip_address, using_custom_key, str(custom_key_hash) if custom_key_hash else None)
+        is_allowed, remaining, reset_time = check_rate_limit(ip_address, using_custom_key, user_api_key)
         
         if not is_allowed:
             if using_custom_key:
@@ -633,7 +635,7 @@ def generate_latex():
         )
         
         # Record the request for rate limiting
-        record_request(ip_address, using_custom_key, str(custom_key_hash) if custom_key_hash else None)
+        record_request(ip_address, using_custom_key, user_api_key)
         
         # Extract and clean LaTeX code
         raw_response = response.choices[0].message.content
@@ -883,10 +885,9 @@ def improve_document():
         # Get client IP for rate limiting
         ip_address = request.remote_addr or 'unknown'
         using_custom_key = bool(user_api_key)
-        custom_key_hash = hash(user_api_key) if user_api_key else None
         
         # Check rate limits (separate buckets for default vs custom key users)
-        is_allowed, remaining, reset_time = check_rate_limit(ip_address, using_custom_key, str(custom_key_hash) if custom_key_hash else None)
+        is_allowed, remaining, reset_time = check_rate_limit(ip_address, using_custom_key, user_api_key)
         
         if not is_allowed:
             return jsonify({
