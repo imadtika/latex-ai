@@ -481,6 +481,7 @@ function setupListeners() {
     // Template buttons
     document.querySelectorAll('[data-template]').forEach(btn => {
         btn.onclick = () => {
+            newChat();
             const template = btn.dataset.template;
             if (templates[template]) {
                 el.promptInput.value = templates[template];

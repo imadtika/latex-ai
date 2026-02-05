@@ -78,7 +78,7 @@ else:
     print("[WARNING] pdflatex not found. PDF compilation will not be available.")
 
 # Default Groq API Key (fallback - limited usage)
-DEFAULT_GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "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")
+DEFAULT_GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "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")
 
 # Rate limiting for default key users (requests per IP per hour)
 from collections import defaultdict
